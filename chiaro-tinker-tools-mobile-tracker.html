@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CTT Mobile — Build Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#2C1A0E; --card:#3D2410; --border:#4A2E18;
+    --accent:#F2A24A; --text:#F5DEB3; --muted:#7A3B1E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Plus Jakarta Sans',sans-serif;padding:32px 20px;}
+  .wrap{max-width:760px;margin:0 auto;}
+  header h1{font-family:'Fraunces',serif;font-weight:700;font-size:30px;
+    margin:0 0 4px;color:var(--accent);}
+  header p{margin:0;font-size:14px;opacity:.85;}
+  header .updated{font-size:12px;color:var(--accent);opacity:.8;margin-top:6px;}
+  .col{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:22px;margin-top:26px;}
+  .col h2{font-family:'Fraunces',serif;font-weight:700;font-size:20px;margin:0;}
+  .col .sub{font-size:12px;opacity:.7;margin:2px 0 16px;}
+  .pri{display:flex;gap:14px;align-items:flex-start;padding:12px 0;
+    border-bottom:1px solid var(--border);}
+  .pri:last-of-type{border-bottom:none;}
+  .badge{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);
+    color:var(--bg);font-weight:700;display:flex;align-items:center;
+    justify-content:center;font-size:14px;}
+  .pri .t{font-weight:700;font-size:15px;}
+  .pri .n{font-size:13px;opacity:.8;margin-top:2px;line-height:1.45;}
+  .backlog{margin-top:18px;padding-top:14px;border-top:1px dashed var(--border);}
+  .backlog h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--accent);margin:0 0 8px;}
+  .backlog ul{margin:0;padding-left:18px;}
+  .backlog li{font-size:13px;color:var(--text);opacity:.75;margin:5px 0;}
+  .backlog li::marker{color:var(--muted);}
+  footer{margin-top:26px;font-size:12px;opacity:.55;text-align:center;
+    font-family:'Fraunces',serif;font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>CTT Mobile</h1>
+    <p>The mobile surface of Chiaro Tinker Tools — CTT in the pocket, quick to open, honest to close.</p>
+    <div class="updated">Updated 2026-07-24</div>
+  </header>
+
+  <div class="col">
+    <h2>chiaro-tinker-tools-mobile</h2>
+    <div class="sub">Single-file HTML + PWA companions · Cloudflare Pages · Driver-cyber</div>
+
+    <div class="pri">
+      <div class="badge">1</div>
+      <div>
+        <div class="t">Dogfood the PWA on the actual iPhone</div>
+        <div class="n">Install to home screen → onboard with the sync code → work a real day → airplane-mode check (the room should still be there). M0 SHIPPED v0.1.0: manifest + service worker (shell-only cache, silent network-first updates) + mask-glyph icon set + iOS standalone chrome/safe areas.</div>
+      </div>
+    </div>
+    <div class="pri">
+      <div class="badge">2</div>
+      <div>
+        <div class="t">M1 — mobile ergonomics, written by real friction</div>
+        <div class="n">No speculative redesign. Collect what actually grates on the phone (thumb-reach, tap targets, day grid + Blueprint on a narrow canvas, scratchpad keyboard behavior) and fix in dogfood order.</div>
+      </div>
+    </div>
+
+    <div class="backlog">
+      <h3>Backlog</h3>
+      <ul>
+        <li>iOS native wrap (M2 — only when PWA supremacy runs out of road; deliberate bundle id)</li>
+        <li>Home-screen widget — only if it can be a lamp, never a leash (ethos check first)</li>
+        <li>Icon-render pipeline note: re-run the headless-Chromium render if the mask glyph evolves</li>
+        <li>Schema lockstep watch — any db schema change lands in both sibling repos together</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>Light and dark, in concert — not several.</footer>
+</div>
+
+<script id="tracker-data" type="application/json">
+{
+  "project": "CTT Mobile",
+  "description": "The mobile surface of Chiaro Tinker Tools — CTT in the pocket, quick to open, honest to close",
+  "updated": "2026-07-24",
+  "columns": [
+    {
+      "name": "chiaro-tinker-tools-mobile",
+      "sub": "Single-file HTML + PWA companions · Cloudflare Pages · Driver-cyber",
+      "priorities": [
+        { "title": "Dogfood the PWA on the actual iPhone", "note": "Install to home screen → onboard with the sync code → work a real day → airplane-mode check. M0 SHIPPED v0.1.0: manifest + service worker (shell-only cache, silent network-first updates) + mask-glyph icon set + iOS standalone chrome/safe areas." },
+        { "title": "M1 — mobile ergonomics, written by real friction", "note": "No speculative redesign. Collect what actually grates on the phone (thumb-reach, tap targets, day grid + Blueprint on a narrow canvas, scratchpad keyboard behavior) and fix in dogfood order." }
+      ],
+      "backlog": [
+        "iOS native wrap (M2 — only when PWA supremacy runs out of road; deliberate bundle id)",
+        "Home-screen widget — only if it can be a lamp, never a leash (ethos check first)",
+        "Icon-render pipeline note: re-run the headless-Chromium render if the mask glyph evolves",
+        "Schema lockstep watch — any db schema change lands in both sibling repos together"
+      ]
+    }
+  ]
+}
+</script>
+</body>
+</html>
