@@ -30,6 +30,12 @@ chiaro-tinker-tools-mobile-tracker.html   build tracker
 Cloudflare Pages auto-deploys `main`; the build output directory is `src`
 (no build step — the directory is served as-is).
 
+**Canonical door: https://chiaromobile.chadstewartcpa.com** (custom domain,
+added 2026-07-25). The `chiaro-tinker-tools-mobile.pages.dev` alias serves the
+same build, but PWA installs, localStorage, and the sync-code config are all
+**per-origin** — install from the custom domain and stay there, so the data
+and the home-screen app live on the address that's meant to last.
+
 ## PWA notes
 
 - The service worker caches the **app shell only** — never user data, never

@@ -52,6 +52,18 @@
       speculation. Dogfood on the actual iPhone first; let real friction write
       the M1 backlog.
 
+* **[2026-07-25] Custom domain — the canonical door.**
+    * *Decision (Chad):* **https://chiaromobile.chadstewartcpa.com** now fronts
+      the Pages project (the desktop sibling got `chiaro.chadstewartcpa.com`
+      the same morning). No code changes needed — every path in the app, SW,
+      and manifest is relative, so the PWA works identically on any origin.
+    * *Rule of thumb recorded:* PWA install, localStorage, and the sync-code
+      config are all **per-origin**. The custom domain is the canonical door —
+      install and onboard there, not on the `pages.dev` alias, so the
+      home-screen app and its local data live on the address meant to last.
+      (Anything set up on the alias earlier just re-onboards with the sync
+      code — the KV copy is the durable one; nothing is lost.)
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
