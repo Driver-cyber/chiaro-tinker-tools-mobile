@@ -340,12 +340,50 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Tinker's bell — the ember field (backported from desktop v0.6.x) ---------- */
+.bell-panel{margin:0 0 14px;}
+.bell-head{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.bell-carrot{display:inline-block;transition:transform .18s;}
+.bell-panel.open .bell-carrot{transform:rotate(90deg);}
+.bell-mini{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:400;}
+.bell-body{display:none;}
+.bell-panel.open .bell-body{display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding-top:14px;}
+.bell-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;width:190px;height:190px;flex:none;border-radius:6px;}
+.bell-cell{background:radial-gradient(circle at 50% 42%, var(--accent2), var(--accent) 70%);border-radius:2px;opacity:.92;transition:opacity .6s,background .6s;}
+.bell-cell.out{background:var(--group);opacity:.45;}
+.bell-side{display:flex;flex-direction:column;gap:9px;min-width:230px;flex:1;}
+.bell-time{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;}
+.bell-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+/* the rung state: a slow breathing pulse + soft glow — eye-catching only when
+   your eyes come looking. It never flashes, beeps twice, or summons. */
+@keyframes bellPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.bell-grid.rung{animation:bellPulse 2.6s ease-in-out infinite;box-shadow:0 0 26px rgba(242,162,74,.4);}
+@media (prefers-reduced-motion: reduce){
+  .bell-grid.rung{animation:none;box-shadow:0 0 26px rgba(242,162,74,.55);}
+  .bell-cell{transition:none;}
+}
+/* full-screen mode — the mobile translation of the desktop ⧉ pop-out. Pure
+   CSS state on the same nodes (no second document, no moved DOM): the face
+   grows to fill the phone, ✕ shrinks it back, the timer never notices.
+   z-index sits above the appbar (30) and below modals (99). */
+.bell-full-close{display:none;}
+.bell-panel.full .bell-body{display:flex;position:fixed;inset:0;z-index:90;background:var(--bg);
+  flex-direction:column;flex-wrap:nowrap;align-items:center;justify-content:center;gap:26px;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(28px + env(safe-area-inset-bottom,0px));}
+.bell-panel.full .bell-grid{width:min(78vw,46vh);height:min(78vw,46vh);}
+.bell-panel.full .bell-side{min-width:0;flex:none;align-items:center;text-align:center;}
+.bell-panel.full .bell-time{font-size:64px;}
+.bell-panel.full .bell-controls{justify-content:center;}
+.bell-panel.full .bell-full-close{display:block;position:fixed;z-index:91;
+  top:calc(10px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));
+  font-size:18px;padding:8px 14px;}
+body.bell-full-lock{overflow:hidden;}
 </style>
 </head>
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.1.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.2.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -552,6 +590,33 @@ body.modal-open{overflow:hidden;}
       <span class="dow" id="dowLabel"></span>
     </div>
     <div id="loggedDays" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin:0 0 14px;"></div>
+
+    <!-- Tinker's bell: hidden by default; opened by the carrot or a block's 🔔.
+         Static markup on purpose — renderTimecard() never touches it, so a
+         running bell survives re-renders and tab switches. No inline onclick
+         on the controls: addEventListener wiring is the house pattern. -->
+    <div class="panel bell-panel" id="bellPanel">
+      <h3 class="bell-head" onclick="bellToggle()">
+        <span><span class="bell-carrot" id="bellCarrot">▸</span> 🔔 Tinker's bell</span>
+        <button class="ghost small" id="bellFullBtn" style="font-weight:400" title="Grow the bell to fill the screen">⛶</button>
+        <span class="bell-mini muted" id="bellMini"></span>
+      </h3>
+      <div class="bell-body">
+        <button class="ghost small bell-full-close" id="bellCloseBtn" title="Back to the day — the bell keeps running">✕</button>
+        <div class="bell-grid" id="bellGrid" aria-hidden="true"></div>
+        <div class="bell-side">
+          <div class="bell-time" id="bellTime">25:00</div>
+          <div class="muted" id="bellFor">Set a duration, or ring one in from a time block's 🔔.</div>
+          <div class="bell-controls">
+            <label class="muted">Minutes <input type="text" inputmode="numeric" id="bellDur" value="25" style="width:64px;display:inline-block;padding:4px 6px"></label>
+            <button class="small" id="bellStartBtn">Start</button>
+            <button class="ghost small" id="bellResetBtn">Reset</button>
+            <button class="ghost small" id="bellMuteBtn" title="One soft ring when time is up — never more">Sound: off</button>
+          </div>
+          <div class="muted" id="bellWord" style="font-style:italic"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="tcards">
       <div class="tcard total clickable" onclick="openDayBreakdown()" title="Click for the ORDO / Admin / Tinker / Personal / Family breakdown">
@@ -1029,7 +1094,7 @@ body.modal-open{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.1.0 — the mobile surface of
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.2.0 — the mobile surface of
    CTT, forked from chiaro-tinker-tools at v0.5.0 (2026-07-24; CTT itself
    forked from PJT 3.3.0). Single-file HTML plus three PWA companions
    (manifest.webmanifest, sw.js, icons/). Same soul, same schema, same seam —
@@ -2038,6 +2103,14 @@ function entryStart(day,i){ return i===0?day.dayStart:day.entries[i-1].stop; }
 function entryMinutes(day,i){ const s=toMin(entryStart(day,i)),e=toMin(day.entries[i].stop); if(s==null||e==null) return 0; return Math.max(0,e-s); }
 function codeFor(day,letter){ return day.codes.find(c=>c.letter===letter); }
 function codeLabel(c){ return c?(c.client+(c.billing?(' '+c.billing):'')):'(unassigned)'; }
+/* Dropdown-only label: append a hint derived from the linked step name so
+   "VPS 2" answers "which step is that?" without leaving the row. Derived, not
+   stored — step renames already propagate into linkSection, so it can't go
+   stale, and there's no schema change to coordinate with the desktop sibling. */
+function codeOptionLabel(c){ let s=c.letter+' — '+codeLabel(c);
+  if(c && c.linkSection){ let hint=String(c.linkSection).replace(/^\s*[0-9A-Za-z]+\s*[-–—.:]?\s*/,'').trim();
+    if(hint){ if(hint.length>18) hint=hint.slice(0,17)+'…'; s+=' · '+hint; } }
+  return s; }
 function dayTotals(day){ const t=emptyCatTotals(); const byCode={};
   day.entries.forEach((en,i)=>{ const m=entryMinutes(day,i); const c=codeFor(day,en.code); const cat=c?categoryOf(c):'admin'; t[cat]+=m; byCode[en.code]=(byCode[en.code]||0)+m; });
   return {t,byCode}; }
@@ -2151,7 +2224,7 @@ function logRow(day,en,i){
     const insertBefore=below?i+1:i; const from=logDragFrom; logDragFrom=null; clearLogDropMarks();
     if(from!==insertBefore && from!==insertBefore-1){ moveLogEntry(day,from,insertBefore); renderTimecard(); save(); } });
   const tdCode=document.createElement('td'); const sel=document.createElement('select');
-  day.codes.forEach(c=>{ const o=document.createElement('option'); o.value=c.letter; o.textContent=c.letter+' — '+codeLabel(c); if(c.letter===en.code)o.selected=true; sel.appendChild(o); });
+  day.codes.forEach(c=>{ const o=document.createElement('option'); o.value=c.letter; o.textContent=codeOptionLabel(c); if(c.letter===en.code)o.selected=true; sel.appendChild(o); });
   // code change refreshes totals/codes only (NOT the log) so keyboard focus survives for fast Tab entry
   sel.onchange=()=>{ en.code=sel.value; save(); renderCodesTable(); renderTotals(); }; tdCode.appendChild(sel);
 
@@ -2174,8 +2247,13 @@ function logRow(day,en,i){
   if(sM!=null && eM!=null && eM<sM){ tdDur.classList.add('var-neg'); tdDur.title='Stop is before start'; tdDur.textContent='⚠ 0.00'; stop.style.borderColor='var(--danger)'; }
   const tdDesc=document.createElement('td'); const desc=document.createElement('input'); desc.value=en.desc||''; desc.placeholder='(optional note)';
   desc.onchange=()=>{ en.desc=desc.value; save(); }; tdDesc.appendChild(desc);
-  const tdDel=document.createElement('td'); const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕';
-  del.onclick=()=>{ day.entries.splice(i,1); renderTimecard(); save(); }; tdDel.appendChild(del);
+  const tdDel=document.createElement('td'); tdDel.style.whiteSpace='nowrap';
+  const bellBtn=document.createElement('button'); bellBtn.className='ghost small'; bellBtn.textContent='🔔';
+  bellBtn.title="Ring the tinker's bell for this block"; bellBtn.style.marginRight='6px';
+  bellBtn.onclick=()=>bellFromEntry(i);
+  const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕';
+  del.onclick=()=>{ day.entries.splice(i,1); renderTimecard(); save(); };
+  tdDel.appendChild(bellBtn); tdDel.appendChild(del);
   tr.append(tdDrag,tdCode,tdStart,tdStop,tdDur,tdDesc,tdDel); return tr;
 }
 function codeRow(day,c,mins){
@@ -2682,6 +2760,113 @@ function switchTcTab(name){ document.querySelectorAll('#main-timecard .tab').for
 function toggleDark(){ db.darkMode=!db.darkMode; document.body.classList.toggle('cream',db.darkMode); save(); }
 
 /* =====================================================================
+   TINKER'S BELL — backported from desktop v0.6.x. Ephemeral by design:
+   nothing here touches db, save(), or the sync seam. The countdown is
+   wall-clock based (endAt timestamp), so backgrounding the PWA never
+   drifts it — on return the bell catches up instantly and rings if its
+   time passed while away. No notifications, ever: full-screen + wake
+   lock is the honest mobile version of "running in the background".
+   ===================================================================== */
+const bell={total:0,left:0,endAt:0,running:false,tick:null,muted:true,rung:false,label:''};
+const BELL_CELLS=100;
+/* Cached refs, not live lookups — same discipline as desktop (its face moves
+   documents in PiP; here it's just cheap and consistent). */
+let _bellEls=null;
+function bellEls(){ if(_bellEls) return _bellEls;
+  _bellEls={
+    panel:document.getElementById('bellPanel'), body:document.querySelector('#bellPanel .bell-body'),
+    grid:document.getElementById('bellGrid'), time:document.getElementById('bellTime'),
+    mini:document.getElementById('bellMini'), forEl:document.getElementById('bellFor'),
+    word:document.getElementById('bellWord'), dur:document.getElementById('bellDur'),
+    start:document.getElementById('bellStartBtn'), reset:document.getElementById('bellResetBtn'),
+    mute:document.getElementById('bellMuteBtn'), full:document.getElementById('bellFullBtn'),
+    close:document.getElementById('bellCloseBtn') };
+  return _bellEls; }
+function bellInitGrid(){ const g=bellEls().grid; if(!g||g.childElementCount) return;
+  for(let i=0;i<BELL_CELLS;i++){ const d=document.createElement('div'); d.className='bell-cell'; g.appendChild(d); } }
+function bellMins(){ const m=parseInt(bellEls().dur.value,10); return (isNaN(m)||m<1)?25:Math.min(m,720); }
+function bellFmt(t){ const mm=Math.floor(t/60), ss=t%60;
+  return mm>=60 ? Math.floor(mm/60)+':'+String(mm%60).padStart(2,'0')+':'+String(ss).padStart(2,'0')
+                : mm+':'+String(ss).padStart(2,'0'); }
+function bellPaint(){ const e=bellEls(); if(!e.panel) return;
+  const str=bell.total?bellFmt(bell.left):bellFmt(bellMins()*60);
+  if(e.time) e.time.textContent=str;
+  if(e.grid && e.grid.childElementCount){
+    const frac=bell.total?(bell.left/bell.total):1, lit=Math.ceil(frac*BELL_CELLS);
+    [...e.grid.children].forEach((c,i)=>c.classList.toggle('out',i>=lit)); }
+  if(e.mini) e.mini.textContent=bell.rung?'Rung.':(bell.running?(str+(bell.label?' · '+bell.label:'')):''); }
+function bellToggle(force){ const e=bellEls();
+  const open=(force!=null)?force:!e.panel.classList.contains('open');
+  e.panel.classList.toggle('open',open); bellInitGrid(); bellPaint(); }
+function bellClearRung(){ bell.rung=false; const e=bellEls(); e.grid.classList.remove('rung'); e.word.textContent=''; }
+function bellSet(mins,label){ bellStop(); bellClearRung();
+  bell.total=Math.max(1,Math.round(mins))*60; bell.left=bell.total; bell.label=label||'';
+  const e=bellEls(); e.dur.value=String(Math.round(bell.total/60)); e.start.textContent='Start';
+  e.forEl.textContent=label?('Keeping time for '+label+'.'):"Set a duration, or ring one in from a time block's 🔔.";
+  bellToggle(true); }
+function bellFromEntry(i){ const day=curDay(); const en=day.entries[i]; if(!en) return;
+  const m=entryMinutes(day,i); const c=codeFor(day,en.code);
+  bellSet(m>0?m:25, en.code+' — '+codeLabel(c));
+  try{ document.getElementById('bellPanel').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(_){} }
+function bellStartPause(){ const e=bellEls();
+  if(bell.running){ bell.left=Math.max(0,Math.round((bell.endAt-Date.now())/1000)); bellStop();
+    e.start.textContent='Resume'; bellPaint(); return; }
+  const midway=bell.left>0 && bell.left<bell.total && !bell.rung;
+  if(!midway){ bellClearRung(); bell.total=bellMins()*60; bell.left=bell.total; }
+  bell.endAt=Date.now()+bell.left*1000; bell.running=true; e.start.textContent='Pause';
+  bell.tick=setInterval(bellTick,250); bellTick(); bellWakeUpdate(); }
+function bellStop(){ bell.running=false; if(bell.tick){ clearInterval(bell.tick); bell.tick=null; } bellWakeUpdate(); }
+function bellReset(){ bellStop(); bellClearRung(); bell.label='';
+  bell.total=bellMins()*60; bell.left=bell.total; const e=bellEls();
+  e.start.textContent='Start'; e.forEl.textContent="Set a duration, or ring one in from a time block's 🔔.";
+  bellPaint(); }
+function bellTick(){ if(!bell.running) return;
+  bell.left=Math.max(0,Math.round((bell.endAt-Date.now())/1000)); bellPaint();
+  if(bell.left<=0){ bellStop(); bellRing(); } }
+function bellRing(){ bell.rung=true; const e=bellEls();
+  e.start.textContent='Start'; e.word.textContent='Rung. The block is yours to close.';
+  e.grid.classList.add('rung'); bellPaint(); if(!bell.muted) bellChime(); }
+let bellAC=null;
+function bellChime(){ try{
+  bellAC=bellAC||new (window.AudioContext||window.webkitAudioContext)();
+  const t=bellAC.currentTime;
+  // a small synthesized bell: fundamental + two soft inharmonic partials, one strike
+  [[880,.20,2.6],[1318.5,.10,2.0],[2093,.04,1.2]].forEach(([f,g,dur])=>{
+    const o=bellAC.createOscillator(), gn=bellAC.createGain();
+    o.type='sine'; o.frequency.value=f;
+    gn.gain.setValueAtTime(0.0001,t); gn.gain.exponentialRampToValueAtTime(g,t+0.02);
+    gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(gn); gn.connect(bellAC.destination); o.start(t); o.stop(t+dur+0.1); });
+ }catch(e){ console.error('bell chime',e); } }
+function bellMuteToggle(){ bell.muted=!bell.muted;
+  bellEls().mute.textContent='Sound: '+(bell.muted?'off':'on'); }
+
+/* ---------- full-screen mode + wake lock -----------------------------
+   The mobile translation of the desktop ⧉ pop-out: same nodes, a CSS
+   state grows the face to fill the phone; ✕ shrinks it back without
+   stopping anything. While full-screen AND running, a Screen Wake Lock
+   keeps the phone awake — a kitchen timer that lets the screen sleep is
+   a kitchen timer you never see ring. Released the moment either
+   condition ends. Feature-detected; never used anywhere else. */
+let bellWake=null;
+async function bellWakeUpdate(){ const e=bellEls(); if(!e.panel) return;
+  const want=e.panel.classList.contains('full') && bell.running;
+  try{
+    if(want && !bellWake && ('wakeLock' in navigator)){
+      bellWake=await navigator.wakeLock.request('screen');
+      bellWake.addEventListener('release',()=>{ bellWake=null; });
+    } else if(!want && bellWake){ const w=bellWake; bellWake=null; await w.release(); }
+  }catch(_){ bellWake=null; } }
+function bellFull(on){ const e=bellEls();
+  if(on) bellToggle(true);                     // build the grid before growing it
+  e.panel.classList.toggle('full',on);
+  document.body.classList.toggle('bell-full-lock',on);
+  bellPaint(); bellWakeUpdate(); }
+/* the OS silently releases wake locks on backgrounding — re-arm on return
+   (and the wall-clock endAt means the countdown never drifted anyway) */
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') bellWakeUpdate(); });
+
+/* =====================================================================
    CLOUD SYNC — Cloudflare KV via a tiny Worker (see sync/chiaro-sync-worker.js).
    The Worker stores one JSON blob per journal key, guarded by a shared secret.
    Config (Worker URL + secret) is entered ONCE in Sync settings and lives only
@@ -2932,6 +3117,22 @@ async function bootApp(){
   load();
 }
 bootApp();
+
+/* wire the bell controls with real listeners (house pattern since desktop
+   v0.6.2 — no inline onclick on controls), and let the big countdown follow
+   the Minutes field as you type — typing also counts as "noticed", so it
+   settles a rung pulse. */
+(function(){ const e=bellEls(); if(!e.panel) return;
+  if(e.start) e.start.addEventListener('click',bellStartPause);
+  if(e.reset) e.reset.addEventListener('click',bellReset);
+  if(e.mute)  e.mute.addEventListener('click',bellMuteToggle);
+  if(e.full)  e.full.addEventListener('click',function(ev){ ev.stopPropagation(); bellFull(true); });
+  if(e.close) e.close.addEventListener('click',function(){ bellFull(false); });
+  if(e.dur)   e.dur.addEventListener('input',function(){
+    if(bell.running) return;
+    bellClearRung(); bell.total=0; bell.left=0;
+    e.start.textContent='Start'; bellPaint(); });
+})();
 
 /* CTT Mobile: service-worker registration — feature-detected like the Tauri
    fs seam. A no-op outside http(s) (file://, native shells) and in browsers

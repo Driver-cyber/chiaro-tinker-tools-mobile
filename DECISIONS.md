@@ -64,6 +64,39 @@
       (Anything set up on the alias earlier just re-onboards with the sync
       code — the KV copy is the durable one; nothing is lost.)
 
+* **[2026-07-25] v0.2.0 — the bell crosses the bridge (first sibling backport).**
+    * *Decision (Chad):* backport the desktop v0.6.x arc — the **tinker's
+      bell** and the derived **code hints** in the log dropdown — and give the
+      bell a mobile-native third form: **full-screen mode**. ⛶ on the bell
+      head grows the face to fill the phone (controls in the bottom third,
+      ✕ top-right, safe-area aware); ✕ shrinks it back **without stopping
+      anything**. Chad's instinct, confirmed against platform convention —
+      full-screen takeover is what Clock-style timers do; Document PiP
+      doesn't exist on iOS Safari, so this is the honest translation of the
+      desktop ⧉ pop-out.
+    * *Implementation choice:* full-screen is a **pure CSS state** on the same
+      nodes (`.bell-panel.full` + fixed inset overlay) — no second document,
+      no moved DOM, so the v0.6.2 cross-document scar can't reopen here. The
+      controls are addEventListener-wired anyway (house pattern).
+    * *Screen Wake Lock:* while full-screen AND running, the phone stays
+      awake (`navigator.wakeLock`, feature-detected, re-armed on
+      visibilitychange since the OS drops locks on backgrounding). Ethos
+      check: a kitchen timer that lets the screen sleep is a kitchen timer
+      you never see ring — this is a tool Chad invoked minutes ago, not a
+      leash. Released the instant either condition ends.
+    * *Backgrounding, honestly:* the countdown is wall-clock (`endAt`), so
+      leaving the PWA never drifts it — on return it catches up instantly and
+      rings if its time passed. What it cannot do is pulse or chime while iOS
+      has the tab frozen; the only workaround is push notifications, which
+      CTT will never use. Full-screen + wake lock is the whole answer.
+    * *Lockstep note:* zero schema impact — the bell is ephemeral (never
+      touches db/save/sync) and hints are derived at render time. No
+      coordination needed; siblings stay in lockstep by not touching the db.
+    * *Verified* headless at 390×844 with real element clicks: overlay
+      measured exactly 390×844, ✕ at the top-right inset, rung pulse in
+      full-screen, ✕-collapse with the timer still running, round-trip
+      expand/collapse mid-run. Wake lock acquired in-harness.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
