@@ -97,6 +97,29 @@
       full-screen, ✕-collapse with the timer still running, round-trip
       expand/collapse mid-run. Wake lock acquired in-harness.
 
+* **[2026-07-26] v0.3.0 — the timer visual system (lockstep backport of
+  desktop v0.7.0).**
+    * *Decision (Chad, planned in a claude.ai session):* the bell's pixel
+      grid becomes a **swappable renderer registry** — six visuals (Ember
+      grid, Balance, Moon, The Thinker, Lantern, Sundial), **random per
+      timer start/reset**, Visual dropdown **hot-swaps preserving timer
+      state**; a manual pick holds for the current timer only. Renderers are
+      pure functions of elapsed fraction — `render(p) → {vb, body, post?}` —
+      the `bell` object stays the only brain. Full details and guardrails in
+      the desktop repo's DECISIONS entry (same date); this repo carries the
+      identical engine.
+    * *Mobile specifics:* the visuals render inside the existing full-screen
+      mode untouched — the `.bell-vis` square grows to `min(84vw,50vh)` when
+      full. Wake lock, ✕-collapse, and the rung pulse compose with any
+      renderer. Zero schema impact (ephemeral, derived) — no lockstep
+      coordination needed beyond shipping both sides the same day, which
+      this did.
+    * *Verified* headless at 390×844 with real clicks: all six render clean
+      at five p-values; no horizontal overflow; mid-run hot-swap preserved
+      state exactly; full-screen overlay 390×844 with the visual at 328px;
+      wake lock held in full+running and released on ✕; reset returned the
+      dropdown to Random; Thinker length-cache built.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
