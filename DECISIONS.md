@@ -159,6 +159,16 @@
   v0.8.2).** Commas + fixed two decimals on every displayed number; display
   only, raw text untouched. No schema impact.
 
+* **[2026-07-26] v0.4.3 — composition bar + source-cell highlighting
+  (lockstep with desktop v0.8.3).** A wide formula bar above the grid mirrors
+  the cell being edited (ref label at left) — on a phone this matters double,
+  since a cell is 84px wide. Tapping cells while composing inserts refs into
+  the bar; every referenced cell (ranges expanded) is outlined amber while
+  the formula is open. Escape follows Excel's rule: abandon an in-progress
+  edit, keep the sheet; nothing to abandon → close. Verified at 390×844 with
+  real key + tap events. Zero schema impact; full details in the desktop
+  repo's v0.8.3 entry.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
