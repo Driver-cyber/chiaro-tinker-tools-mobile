@@ -120,6 +120,31 @@
       wake lock held in full+running and released on ✕; reset returned the
       dropdown to Random; Thinker length-cache built.
 
+* **[2026-07-26] v0.4.0 — the scratch sheet (lockstep with desktop v0.8.0:
+  the FIRST real schema addition since the split).**
+    * *Decision (Chad):* the 8×25 formula grid ("un-squint the numbers")
+      lands on mobile the same day as desktop — see the desktop repo's
+      DECISIONS entry for the full design (pocket-tool pattern, napkin
+      rules, two-tap clear, frozen scope).
+    * *SCHEMA LOCKSTEP, honored for real this time:* `db.scratch.cells`
+      (raw strings, "A1".."H25") + the `mergeDefaults()` default now exist
+      in BOTH repos. Verified here with legacy-shaped data: a pre-scratch
+      db staged in localStorage boots clean and gains the default. Both
+      normalizers also preserve unknown keys, so a skewed deploy window
+      can't drop a sibling's sheet — but same-day is the rule, and it held.
+    * *Mobile specifics:* the ▦ pocket button sits in the appbar next to
+      the save pill; the overlay is safe-area padded; the grid scrolls
+      horizontally INSIDE `.scratch-wrap` (the page itself never
+      side-scrolls — standing rule), row numbers sticky, 14px inputs with
+      fat tap targets. Backdrop tap closes; the room underneath never moves.
+    * *Verified* headless at 390×844 with focus-emulated real events:
+      `=B1*B2` → 276.04, `=SUM(B1:B3)` → 688.71, cold-reload persistence,
+      page scrollWidth exactly 390 with the wrap scrolling internally,
+      backdrop-tap close. *Harness scar (from the desktop round, bit again
+      here):* `Emulation.setFocusEmulationEnabled` must be re-issued after
+      every navigation — it doesn't survive one, and without it headless
+      documents swallow focus/blur events while still moving activeElement.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

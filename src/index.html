@@ -340,6 +340,29 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Scratch sheet — a pocket tool, not a room (mobile-tuned) ---------- */
+.pocket-btn{font-size:15px;line-height:1;padding:7px 10px;opacity:.6;}
+.pocket-btn:hover{opacity:1;}
+.scratch-over{position:fixed;inset:0;background:rgba(5,4,2,.62);display:none;z-index:70;overscroll-behavior:contain;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 8px calc(14px + env(safe-area-inset-bottom,0px));}
+.scratch-over.open{display:flex;align-items:flex-start;justify-content:center;}
+.scratch-panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:100%;
+  max-height:calc(100vh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;box-shadow:0 18px 60px rgba(0,0,0,.45);}
+.scratch-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.scratch-head h3{margin:0;font-size:15px;}
+.scratch-head .muted{font-size:11px;width:100%;order:9;}
+/* the grid scrolls INSIDE its own container — the page never side-scrolls (standing rule) */
+.scratch-wrap{overflow:auto;padding:6px 8px 10px;-webkit-overflow-scrolling:touch;}
+table.scratch{border-collapse:separate;border-spacing:0;}
+table.scratch th{background:var(--panel);color:var(--muted);font-weight:400;font-size:11px;padding:2px 6px;position:sticky;z-index:2;}
+table.scratch thead th{top:0;}
+table.scratch tbody th{left:0;text-align:right;}
+table.scratch td{border:1px solid var(--border);padding:0;}
+table.scratch td input{width:84px;border:none;border-radius:0;background:transparent;padding:8px 7px;font-size:14px;font-variant-numeric:tabular-nums;display:block;}
+table.scratch td input:focus{outline:2px solid var(--accent);outline-offset:-2px;background:rgba(242,162,74,.06);}
+table.scratch td input.sc-num{text-align:right;}
+table.scratch td input.sc-err{color:var(--danger);text-align:center;}
 /* ---------- Tinker's bell — the ember field (backported from desktop v0.6.x) ---------- */
 .bell-panel{margin:0 0 14px;}
 .bell-head{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
@@ -384,7 +407,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.3.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -393,6 +416,7 @@ body.bell-full-lock{overflow:hidden;}
     <div class="maintab" data-m="closing" onclick="switchMain('closing')">Closing</div>
   </div>
   <div class="spacer"></div>
+  <button class="ghost small pocket-btn" onclick="scratchToggle()" title="Scratch sheet — an 8×25 pocket grid with basic math">▦</button>
   <div class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveStatus">Saved</span></div>
   <div class="sync-pill" id="syncPill" onclick="openSettings()" title="Storage & cloud sync settings"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Local only</span></div>
   <div class="gear-wrap">
@@ -1092,11 +1116,31 @@ body.bell-full-lock{overflow:hidden;}
   <div class="modal-actions"><button class="ghost" onclick="closeModal('catModalBg')">Close</button></div>
 </div></div>
 
+<!-- Scratch sheet: the first pocket tool on the belt. Summoned from any room
+     via the appbar ▦; the room stays put underneath. Grid is built once by
+     scratchBuild(); cells persist as raw strings in db.scratch.cells.
+     The grid scrolls horizontally inside .scratch-wrap on a narrow canvas. -->
+<div class="scratch-over" id="scratchOver" onclick="if(event.target===this) scratchToggle(false)">
+  <div class="scratch-panel">
+    <div class="scratch-head">
+      <h3>▦ Scratch sheet</h3>
+      <span style="flex:1"></span>
+      <button class="ghost small" onclick="scratchClear(this)">Clear sheet</button>
+      <button class="ghost small" onclick="scratchToggle(false)" title="Back in the pocket">✕</button>
+      <span class="muted">=A1*B2 &nbsp;·&nbsp; SUM · AVG · MIN · MAX (A1:A9) — numbers you don't have to hold in your head</span>
+    </div>
+    <div class="scratch-wrap" id="scratchWrap"></div>
+  </div>
+</div>
+
 <input type="file" id="importFile" class="hidden" accept=".json" />
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.3.0 — the mobile surface of
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.0 — the mobile surface of
+   CTT. v0.4.0: the scratch sheet — pocket tool #1, an 8×25 formula grid
+   behind the appbar ▦ (db.scratch: FIRST real schema addition since the
+   split, landed in lockstep with desktop v0.8.0). Previously:
    CTT. v0.3.0: the bell's visual registry — six swappable countdown visuals
    (random per timer, dropdown hot-swap preserving state), backported in
    lockstep with desktop v0.7.0. Previously:
@@ -1188,6 +1232,7 @@ function mergeDefaults(p){
   p.timecard=Object.assign({days:{},currentDate:null}, p.timecard||{});
   p.intentions=p.intentions||{};   // Opening tab: per-date session intentions [{text,from,to,done}]
   p.closing=p.closing||{};         // Closing tab: per-date {enough:bool} — never read after its day
+  p.scratch=Object.assign({cells:{}}, p.scratch||{});   // Scratch sheet (pocket tool): raw strings keyed "A1".."H25" — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.prompts=Object.assign({open:[
     "What is this session for?",
     "Name the one thing.",
@@ -3054,6 +3099,158 @@ function bellFull(on){ const e=bellEls();
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') bellWakeUpdate(); });
 
 /* =====================================================================
+   SCRATCH SHEET — pocket tool #1 on the tinker's belt. An 8×25 grid
+   (A1..H25) for un-squinting numbers: type text, type numbers, or start
+   a cell with '=' for arithmetic (+ - * / parentheses), cell refs, and
+   SUM/AVG/MIN/MAX over ranges. Cells persist as RAW STRINGS in
+   db.scratch.cells through the one save() seam — synced, exported, and
+   restored like everything else. SCHEMA LOCKSTEP: db.scratch and its
+   mergeDefaults() line exist in both sibling repos; this was the first
+   real schema addition since the split. The whole engine is display
+   math — computed values are never stored.
+   ===================================================================== */
+const SC_COLS=['A','B','C','D','E','F','G','H'], SC_ROWS=25;
+function scCells(){ return db.scratch.cells; }
+function scRaw(ref){ const v=scCells()[ref]; return v==null?'':String(v); }
+
+/* tiny recursive-descent evaluator. resolve(ref) supplies cell values;
+   throws {err:'#…'} objects for anything unspeakable. */
+function scEvalExpr(s, resolve){
+  let i=0;
+  const ws=()=>{ while(i<s.length && s[i]===' ') i++; };
+  function expr(){ let v=term(); ws();
+    while(i<s.length && (s[i]==='+'||s[i]==='-')){ const op=s[i++]; const r=term(); v=(op==='+')?v+r:v-r; ws(); }
+    return v; }
+  function term(){ let v=factor(); ws();
+    while(i<s.length && (s[i]==='*'||s[i]==='/')){ const op=s[i++]; const r=factor(); v=(op==='*')?v*r:v/r; ws(); }
+    return v; }
+  function factor(){ ws();
+    if(s[i]==='('){ i++; const v=expr(); ws(); if(s[i]!==')') throw {err:'#ERR'}; i++; return v; }
+    if(s[i]==='-'){ i++; return -factor(); }
+    if(s[i]==='+'){ i++; return factor(); }
+    const fn=/^(SUM|AVG|MIN|MAX)\(/i.exec(s.slice(i));
+    if(fn){ i+=fn[0].length; const vals=[];
+      for(;;){ ws();
+        const rng=/^([A-Ha-h])([0-9]{1,2})\s*:\s*([A-Ha-h])([0-9]{1,2})/.exec(s.slice(i));
+        if(rng){ i+=rng[0].length;
+          const c1=SC_COLS.indexOf(rng[1].toUpperCase()), c2=SC_COLS.indexOf(rng[3].toUpperCase());
+          const r1=parseInt(rng[2],10), r2=parseInt(rng[4],10);
+          if(r1<1||r1>SC_ROWS||r2<1||r2>SC_ROWS) throw {err:'#REF'};
+          for(let c=Math.min(c1,c2); c<=Math.max(c1,c2); c++)
+            for(let r=Math.min(r1,r2); r<=Math.max(r1,r2); r++) vals.push(resolve(SC_COLS[c]+r));
+        } else vals.push(expr());
+        ws(); if(s[i]===','){ i++; continue; } break; }
+      if(s[i]!==')') throw {err:'#ERR'}; i++;
+      const f=fn[1].toUpperCase();
+      if(!vals.length) return 0;
+      if(f==='SUM') return vals.reduce((a,b)=>a+b,0);
+      if(f==='AVG') return vals.reduce((a,b)=>a+b,0)/vals.length;
+      if(f==='MIN') return Math.min.apply(null,vals);
+      return Math.max.apply(null,vals); }
+    const ref=/^([A-Ha-h])([0-9]{1,2})(?![0-9A-Za-z])/.exec(s.slice(i));
+    if(ref){ i+=ref[0].length; const r=parseInt(ref[2],10);
+      if(r<1||r>SC_ROWS) throw {err:'#REF'};
+      return resolve(ref[1].toUpperCase()+r); }
+    const num=/^[0-9]*\.?[0-9]+/.exec(s.slice(i));
+    if(num){ i+=num[0].length; return parseFloat(num[0]); }
+    throw {err:'#ERR'}; }
+  const v=expr(); ws();
+  if(i<s.length) throw {err:'#ERR'};
+  return v;
+}
+
+/* cell value with memo + cycle detection. Blank and text cells count as 0 —
+   napkin rules, not Excel rules. Errors propagate as thrown {err} objects. */
+function scCellValue(ref, visiting, memo){
+  if(memo.has(ref)){ const m=memo.get(ref); if(m && m.err) throw m; return m; }
+  const raw=scRaw(ref).trim();
+  if(raw===''){ memo.set(ref,0); return 0; }
+  if(raw[0]==='='){
+    if(visiting.has(ref)) throw {err:'#CYCLE'};
+    visiting.add(ref);
+    let v;
+    try{ v=scEvalExpr(raw.slice(1), r=>scCellValue(r,visiting,memo)); }
+    catch(e){ visiting.delete(ref); const er=(e&&e.err)?e:{err:'#ERR'}; memo.set(ref,er); throw er; }
+    visiting.delete(ref);
+    if(!isFinite(v)){ const er={err:'#DIV0'}; memo.set(ref,er); throw er; }
+    memo.set(ref,v); return v; }
+  const n=Number(raw.replace(/,/g,''));
+  const v=isNaN(n)?0:n;
+  memo.set(ref,v); return v;
+}
+function scFmt(v){ if(Number.isInteger(v)) return String(v);
+  return v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''); }
+function scDisplay(ref, visiting, memo){
+  const raw=scRaw(ref);
+  if(raw.trim()==='') return {text:'',cls:''};
+  if(raw.trim()[0]==='='){
+    try{ return {text:scFmt(scCellValue(ref,visiting,memo)), cls:'sc-num'}; }
+    catch(e){ return {text:(e&&e.err)||'#ERR', cls:'sc-err'}; } }
+  const n=Number(raw.replace(/,/g,''));
+  return isNaN(n)?{text:raw,cls:''}:{text:raw,cls:'sc-num'};
+}
+
+let _scEls=null;   /* ref -> its input; grid DOM is built once and kept */
+function scratchBuild(){
+  if(_scEls) return;
+  _scEls={};
+  const wrap=document.getElementById('scratchWrap');
+  const tbl=document.createElement('table'); tbl.className='scratch';
+  const thead=document.createElement('thead'); const hr=document.createElement('tr');
+  hr.appendChild(document.createElement('th'));
+  SC_COLS.forEach(c=>{ const th=document.createElement('th'); th.textContent=c; hr.appendChild(th); });
+  thead.appendChild(hr); tbl.appendChild(thead);
+  const tb=document.createElement('tbody');
+  for(let r=1;r<=SC_ROWS;r++){
+    const tr=document.createElement('tr');
+    const th=document.createElement('th'); th.textContent=r; tr.appendChild(th);
+    SC_COLS.forEach(c=>{ const ref=c+r;
+      const td=document.createElement('td');
+      const inp=document.createElement('input');
+      inp.dataset.ref=ref; inp.autocomplete='off'; inp.spellcheck=false;
+      inp.addEventListener('focus',()=>{ inp.value=scRaw(ref); inp.select(); });
+      inp.addEventListener('blur',()=>{ scCommit(ref,inp.value); });
+      inp.addEventListener('keydown',ev=>{
+        if(ev.key==='Enter'){ ev.preventDefault();
+          const nx=_scEls[c+((r<SC_ROWS)?r+1:1)]; if(nx) nx.focus(); } });
+      td.appendChild(inp); tr.appendChild(td); _scEls[ref]=inp; });
+    tb.appendChild(tr); }
+  tbl.appendChild(tb); wrap.appendChild(tbl);
+  scRecalc();
+}
+function scCommit(ref,val){
+  const v=String(val);
+  if(v!==scRaw(ref)){
+    if(v.trim()==='') delete scCells()[ref]; else scCells()[ref]=v;
+    save(); }
+  scRecalc();
+}
+function scRecalc(){
+  if(!_scEls) return;
+  const memo=new Map(), visiting=new Set();
+  Object.keys(_scEls).forEach(ref=>{
+    const inp=_scEls[ref];
+    if(document.activeElement===inp) return;   /* never clobber a cell mid-edit */
+    const d=scDisplay(ref,visiting,memo);
+    inp.value=d.text; inp.className=d.cls; });
+}
+function scratchToggle(force){
+  const o=document.getElementById('scratchOver');
+  const open=(force!=null)?force:!o.classList.contains('open');
+  if(open){ scratchBuild(); scRecalc(); }
+  else if(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.ref){ document.activeElement.blur(); }
+  o.classList.toggle('open',open);
+}
+/* clearing is a two-tap arm, not a modal — fewer ways to lose a napkin by accident */
+let _scArm=null;
+function scratchClear(b){
+  if(_scArm){ clearTimeout(_scArm); _scArm=null;
+    db.scratch.cells={}; save(); scRecalc(); b.textContent='Clear sheet'; return; }
+  b.textContent='Really clear?';
+  _scArm=setTimeout(()=>{ _scArm=null; b.textContent='Clear sheet'; },2600);
+}
+
+/* =====================================================================
    CLOUD SYNC — Cloudflare KV via a tiny Worker (see sync/chiaro-sync-worker.js).
    The Worker stores one JSON blob per journal key, guarded by a shared secret.
    Config (Worker URL + secret) is entered ONCE in Sync settings and lives only
@@ -3273,6 +3470,9 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('mousedow
   if(bg.id==='editorModalBg'){ commitExpanded(); editorCtx=null; renderJournal(); }   // never lose notes on a stray click
   bg.classList.remove('open'); bg.style.zIndex=''; updateModalLock(); if(bg.id==='conflictModalBg') cancelPendingConflict(); } }));
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeGearMenu();
+  /* pocket tools yield to modals: Esc closes an open modal first, the scratch sheet otherwise */
+  const _so=document.getElementById('scratchOver');
+  if(_so && _so.classList.contains('open') && !document.querySelector('.modal-bg.open')) scratchToggle(false);
   if(document.getElementById('editorModalBg').classList.contains('open')){ commitExpanded(); editorCtx=null; renderJournal(); }
   document.querySelectorAll('.modal-bg.open').forEach(m=>{ m.classList.remove('open'); m.style.zIndex=''; }); updateModalLock(); cancelPendingConflict(); }
   const ed=document.getElementById('bigEditor'); if(document.getElementById('editorModalBg').classList.contains('open')&&document.activeElement===ed){
