@@ -145,6 +145,16 @@
       every navigation — it doesn't survive one, and without it headless
       documents swallow focus/blur events while still moving activeElement.
 
+* **[2026-07-26] v0.4.1 — scratch-sheet ergonomics (lockstep with desktop
+  v0.8.1).** Arrow-key cell navigation (Left/Right from text edges only) and
+  Excel-style point-to-refer: mid-formula, tapping a cell inserts its ref;
+  consecutive taps replace the last pointed ref; a complete formula commits
+  and moves on tap. Includes the input-event fix for the point-span flag
+  (keydown alone misses IME/autocomplete — matters extra on iOS keyboards).
+  Verified at 390×844 with real key + mouse events: 6⏎5⏎ list entry,
+  =tap+tap → 11, ArrowDown navigation. Zero schema impact; full details in
+  the desktop repo's v0.8.1 entry.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
