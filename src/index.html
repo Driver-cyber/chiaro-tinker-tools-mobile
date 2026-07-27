@@ -407,7 +407,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.1</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1137,8 +1137,10 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.0 — the mobile surface of
-   CTT. v0.4.0: the scratch sheet — pocket tool #1, an 8×25 formula grid
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.1 — the mobile surface of
+   CTT. v0.4.1: scratch-sheet ergonomics in lockstep with desktop v0.8.1 —
+   arrow-key navigation + point-to-refer (tap a cell mid-formula to insert
+   its ref). v0.4.0: the scratch sheet — pocket tool #1, an 8×25 formula grid
    behind the appbar ▦ (db.scratch: FIRST real schema addition since the
    split, landed in lockstep with desktop v0.8.0). Previously:
    CTT. v0.3.0: the bell's visual registry — six swappable countdown visuals
@@ -3191,6 +3193,12 @@ function scDisplay(ref, visiting, memo){
 }
 
 let _scEls=null;   /* ref -> its input; grid DOM is built once and kept */
+/* Excel-style pointing: while a cell holds an unfinished formula (caret right
+   after = or an operator), tapping another cell INSERTS its ref instead of
+   moving focus; consecutive taps replace the last pointed ref while you
+   hunt. A complete formula behaves like Excel too — the tap just commits
+   and moves on. */
+let _scPoint={active:false};
 function scratchBuild(){
   if(_scEls) return;
   _scEls={};
@@ -3208,11 +3216,39 @@ function scratchBuild(){
       const td=document.createElement('td');
       const inp=document.createElement('input');
       inp.dataset.ref=ref; inp.autocomplete='off'; inp.spellcheck=false;
-      inp.addEventListener('focus',()=>{ inp.value=scRaw(ref); inp.select(); });
-      inp.addEventListener('blur',()=>{ scCommit(ref,inp.value); });
+      inp.addEventListener('focus',()=>{ _scPoint.active=false; inp.value=scRaw(ref); inp.select(); });
+      inp.addEventListener('blur',()=>{ _scPoint.active=false; scCommit(ref,inp.value); });
+      /* any USER edit ends the last point-span (keydown alone misses IME/
+         autocomplete/paste, which fire input without a keydown) — the
+         programmatic insert itself doesn't fire 'input', so it survives */
+      inp.addEventListener('input',()=>{ _scPoint.active=false; });
       inp.addEventListener('keydown',ev=>{
+        _scPoint.active=false;
+        const ci=SC_COLS.indexOf(c);
+        const go=(rr,cc)=>{ const nx=_scEls[SC_COLS[cc]+rr]; if(nx){ ev.preventDefault(); nx.focus(); } };
         if(ev.key==='Enter'){ ev.preventDefault();
-          const nx=_scEls[c+((r<SC_ROWS)?r+1:1)]; if(nx) nx.focus(); } });
+          const nx=_scEls[c+((r<SC_ROWS)?r+1:1)]; if(nx) nx.focus(); return; }
+        if(ev.key==='ArrowDown'){ if(r<SC_ROWS) go(r+1,ci); return; }
+        if(ev.key==='ArrowUp'){ if(r>1) go(r-1,ci); return; }
+        /* Left/Right leave the cell only from the text's edge (or with the
+           whole value selected, as right after focus) — mid-text they stay
+           caret moves, so editing a formula never fights navigation */
+        const full=(inp.selectionStart===0 && inp.selectionEnd===inp.value.length);
+        if(ev.key==='ArrowLeft'  && (full || (inp.selectionStart===0 && inp.selectionEnd===0))){ if(ci>0) go(r,ci-1); return; }
+        if(ev.key==='ArrowRight' && (full || (inp.selectionStart===inp.value.length && inp.selectionEnd===inp.value.length))){ if(ci<SC_COLS.length-1) go(r,ci+1); return; } });
+      inp.addEventListener('mousedown',ev=>{
+        const act=document.activeElement;
+        if(!act || act===inp || !act.dataset || !act.dataset.ref) return;
+        const v=act.value; if(v[0]!=='=') return;
+        let s=act.selectionStart, e=act.selectionEnd;
+        if(_scPoint.active && _scPoint.el===act){ s=_scPoint.start; e=_scPoint.end; }
+        const before=v.slice(0,s);
+        if(!/[=+\-*/(,:\s]$/.test(before)) return;   /* formula is complete here → let the tap commit & move */
+        ev.preventDefault();                          /* keep focus in the formula cell */
+        act.value=before+ref+v.slice(e);
+        const ne=s+ref.length;
+        act.setSelectionRange(ne,ne);
+        _scPoint={active:true, el:act, start:s, end:ne}; });
       td.appendChild(inp); tr.appendChild(td); _scEls[ref]=inp; });
     tb.appendChild(tr); }
   tbl.appendChild(tb); wrap.appendChild(tbl);
