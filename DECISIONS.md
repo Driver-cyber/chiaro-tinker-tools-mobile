@@ -155,6 +155,10 @@
   =tap+tap → 11, ArrowDown navigation. Zero schema impact; full details in
   the desktop repo's v0.8.1 entry.
 
+* **[2026-07-26] v0.4.2 — accounting number format (lockstep with desktop
+  v0.8.2).** Commas + fixed two decimals on every displayed number; display
+  only, raw text untouched. No schema impact.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

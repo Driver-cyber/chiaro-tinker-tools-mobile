@@ -407,7 +407,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.1</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.2</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1137,8 +1137,9 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.1 — the mobile surface of
-   CTT. v0.4.1: scratch-sheet ergonomics in lockstep with desktop v0.8.1 —
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.2 — the mobile surface of
+   CTT. v0.4.2: scratch numbers in accounting format (commas + two decimals,
+   display only), lockstep with desktop v0.8.2. v0.4.1: scratch-sheet ergonomics in lockstep with desktop v0.8.1 —
    arrow-key navigation + point-to-refer (tap a cell mid-formula to insert
    its ref). v0.4.0: the scratch sheet — pocket tool #1, an 8×25 formula grid
    behind the appbar ▦ (db.scratch: FIRST real schema addition since the
@@ -3180,8 +3181,10 @@ function scCellValue(ref, visiting, memo){
   const v=isNaN(n)?0:n;
   memo.set(ref,v); return v;
 }
-function scFmt(v){ if(Number.isInteger(v)) return String(v);
-  return v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''); }
+/* accounting face: thousands commas + a fixed two decimals, everywhere a
+   number is DISPLAYED. Raw cell text is never touched — focus shows what
+   was typed. Minus sign for negatives (not parens) — Chad's call to make. */
+function scFmt(v){ return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function scDisplay(ref, visiting, memo){
   const raw=scRaw(ref);
   if(raw.trim()==='') return {text:'',cls:''};
@@ -3189,7 +3192,7 @@ function scDisplay(ref, visiting, memo){
     try{ return {text:scFmt(scCellValue(ref,visiting,memo)), cls:'sc-num'}; }
     catch(e){ return {text:(e&&e.err)||'#ERR', cls:'sc-err'}; } }
   const n=Number(raw.replace(/,/g,''));
-  return isNaN(n)?{text:raw,cls:''}:{text:raw,cls:'sc-num'};
+  return isNaN(n)?{text:raw,cls:''}:{text:scFmt(n),cls:'sc-num'};
 }
 
 let _scEls=null;   /* ref -> its input; grid DOM is built once and kept */
