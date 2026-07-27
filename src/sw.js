@@ -14,7 +14,7 @@
    - Bump CACHE with the app version on release-worthy builds — same
      convention as the subtitle + JS header.
    ===================================================================== */
-const CACHE = 'ctt-mobile-v0.4.1';
+const CACHE = 'ctt-mobile-v0.4.2';
 const SHELL = [
   './',
   './index.html',
