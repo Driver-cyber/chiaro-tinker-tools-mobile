@@ -169,6 +169,31 @@
   real key + tap events. Zero schema impact; full details in the desktop
   repo's v0.8.3 entry.
 
+* **[2026-07-26] v0.4.4 — the involuntary-zoom fix (Chad, pre-install).**
+    * *Symptom:* on the phone "the screen zooms in so the windows aren't
+      always fitting." *Cause:* mobile Safari auto-zooms the page whenever
+      focus lands on a control whose text is under 16px — and it does **not**
+      zoom back out on blur. Every input in the app was 14px (the global
+      `select,input,textarea` rule), so any tap anywhere left the viewport
+      stuck wide.
+    * *Fix:* a `@media (pointer: coarse)` block forcing all form controls to
+      16px. Deliberately **not** `maximum-scale=1` / `user-scalable=no` —
+      deliberate pinch-zoom stays available (accessibility); only the
+      *involuntary* zoom is removed. Scoped to coarse pointers, so the
+      desktop sibling's density is untouched.
+    * *Follow-on:* 16px digits need more room, so mobile scratch cells widen
+      to 112px (measured: `24,798,329.10` wants ~90px of text box). Chasing
+      width forever is a losing game, so truncation became **honest**
+      instead — `text-overflow:ellipsis` on cells in BOTH repos (mobile
+      v0.4.4 / desktop v0.8.4). A silently clipped `4,959,665.82` reading as
+      a complete `4,959,665.8` is a wrong number an accountant could act on;
+      `49,568,236…` can't be misread. The composition bar shows the whole
+      value on focus.
+    * *Verified* at 390×844 with touch emulation (so `pointer: coarse`
+      actually matches): zero visible controls under 16px anywhere in the
+      app, all five rooms plus the open sheet at `scrollWidth` exactly 390,
+      the panel fitting the viewport, and eight-figure sums rendering whole.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
