@@ -226,6 +226,39 @@
       `renderTimecard()` and room switches; a reload starts calm again;
       `scrollWidth` still exactly 390.
 
+* **[2026-07-26] v0.6.0 — the time log and codes become CARDS (Chad, after
+  actually using them on the phone).**
+    * *Correction to v0.5.0's premise:* Chad predicted he'd rarely use time
+      blocks on mobile; he then used them and reported "really hard to use."
+      Collapsing the tables treated the symptom (clutter); the disease was
+      the shape — a seven-column table on a 390px canvas forces a sideways
+      hunt for the field you want.
+    * *Decision:* each row becomes a **vertical card**. Time block: ▲▼ +
+      code select / start → stop + duration / note + 🔔 ✕ — three lines,
+      nothing off-screen. Code: letter + client + hours + ✕ / bill +
+      category / the sync pair stacked with its status pill.
+    * *Decision — ▲▼ replaces the drag handle.* Not a downgrade: HTML5
+      drag-and-drop **never fires on touch**, so reordering was silently
+      impossible on this surface the whole time — and reordering matters
+      because start times chain from the previous block. Same
+      `moveLogEntry()` underneath; edge buttons disable at the ends.
+    * *Decision — one renderer, not two.* The table path is **gone** from
+      this repo rather than branched on width. Maintaining two layouts in
+      one file is the real long-term cost, and this repo IS the phone.
+      Consequence accepted: chiaromobile on a laptop shows cards too; the
+      desktop app is the right tool there.
+    * *Layout note:* at 390px the times row cannot also carry 🔔 ✕ without
+      wrapping them onto an orphan line — the actions ride the note row
+      instead. Measured, not guessed: cards land at 147px, three rows.
+    * *Verified* at 390×844 with touch emulation and real taps: 3 blocks +
+      2 codes render as cards with zero tables left; no card overflows its
+      column and the page stays exactly 390 wide; every field present per
+      card; ▲ reorders and start times recompute (8:00 → 9:30 → 12:15);
+      first ▲ and last ▼ disabled; 🔔 still pre-fills the bell; ✕ deletes;
+      code cards keep letter/client/bill/hours/sync select/status pill.
+    * *Follow-on parked:* the Month Report table has the same shape problem
+      and would want the same treatment. Not built — Chad's call.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

@@ -340,6 +340,37 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Mobile card layout for the time log + codes ----------
+   The seven-column tables are desktop instruments; on a phone they force a
+   sideways hunt. Here every row becomes a vertical card — all of a block's
+   fields reachable in one column — and reordering moves to ▲▼ buttons,
+   because HTML5 drag-and-drop never fires on touch, so the drag handle was
+   dead weight on this surface. One renderer, not two: this repo IS the
+   phone. Deliberate divergence from the desktop sibling. */
+.cardlist{display:flex;flex-direction:column;gap:10px;}
+.cardlist .empty{color:var(--muted);font-size:13px;padding:2px 2px 4px;}
+.blockcard,.codecard{border:1px solid var(--border);border-radius:12px;
+  background:var(--group);padding:10px;display:flex;flex-direction:column;gap:8px;}
+.bc-top,.bc-mid,.cc-top,.cc-mid,.cc-sync{display:flex;align-items:center;gap:8px;}
+.bc-mid,.cc-mid,.cc-sync{flex-wrap:wrap;}
+.bc-move{display:flex;gap:4px;flex:none;}
+.bc-move button{padding:4px 9px;line-height:1;}
+.bc-move button[disabled]{opacity:.3;}
+.bc-top select{flex:1;min-width:0;}
+.bc-start{color:var(--muted);font-variant-numeric:tabular-nums;flex:none;}
+.bc-arrow{color:var(--muted);flex:none;}
+.bc-stop{width:104px;flex:none;}
+.bc-dur{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;flex:none;}
+.bc-acts{display:flex;gap:6px;flex:none;}
+.bc-note{display:flex;align-items:center;gap:8px;}
+.bc-note input{flex:1;min-width:0;}
+.cc-letter{font-weight:700;color:var(--accent);flex:none;min-width:18px;}
+.cc-top input{flex:1;min-width:0;}
+.cc-hrs{font-variant-numeric:tabular-nums;font-weight:600;flex:none;}
+.cc-bill{width:76px;flex:none;}
+.cc-sync{align-items:stretch;flex-direction:column;gap:6px;}
+.cc-sync select{width:100%;}
+.cc-synclabel{color:var(--muted);font-size:12px;}
 /* ---------- Mobile-collapsible panels ----------
    The Time Log and Codes tables are 7-column desktop surfaces; on a phone
    they're a squint. They collapse to a titled header (with a count, so the
@@ -444,7 +475,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.5.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.6.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -696,12 +727,9 @@ body.bell-full-lock{overflow:hidden;}
         </span>
       </h3>
       <div class="body">
-        <table>
-          <thead><tr><th class="drag-cell"></th><th>Code</th><th>Start</th><th>Stop</th><th class="num">Dur</th><th>Description</th><th></th></tr></thead>
-          <tbody id="logBody"></tbody>
-        </table>
+        <div class="cardlist" id="logBody"></div>
       </div>
-      <div class="hint">Set only the <b>code</b> and <b>stop</b> time — start auto-fills from the previous block. Drag the <b>⠿</b> handle to reorder blocks; times recompute to match the new order.</div>
+      <div class="hint">Set only the <b>code</b> and <b>stop</b> time — start auto-fills from the previous block. Use <b>▲▼</b> to reorder blocks; times recompute to match the new order.</div>
     </div>
 
     <div class="panel mpanel collapsed" id="codesPanel">
@@ -710,13 +738,7 @@ body.bell-full-lock{overflow:hidden;}
         <span class="mactions"><button class="small" onclick="addCode()">+ Add code</button></span>
       </h3>
       <div class="body">
-        <table>
-          <thead><tr>
-            <th>Code</th><th>Client</th><th>Bill</th><th>Category</th>
-            <th class="linkcell">Sync to Journal (optional)</th><th class="num">Hrs</th><th></th>
-          </tr></thead>
-          <tbody id="codeBody"></tbody>
-        </table>
+        <div class="cardlist" id="codeBody"></div>
       </div>
       <div class="hint">Pick a journal project (only those with a client code appear) and a section to enable sync.
         Leave it blank to just track the time without posting it anywhere.</div>
@@ -1179,8 +1201,11 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.5.0 — the mobile surface of
-   CTT. v0.5.0: M1 begins — the Time Log and Codes tables (desktop-shaped,
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.6.0 — the mobile surface of
+   CTT. v0.6.0: the time log and codes tables become vertical CARDS —
+   every field in one column, no sideways hunt; reorder is ▲▼ (HTML5 drag
+   never fired on touch). One renderer, not two: this repo is the phone.
+   v0.5.0: M1 begins — the Time Log and Codes tables (desktop-shaped,
    7 columns) collapse on the phone and start closed, each header carrying
    a count. First deliberate layout divergence from the desktop sibling.
    v0.4.4: no more involuntary iOS zoom — every form control is 16px on
@@ -2268,12 +2293,13 @@ function setMCount(id,n,word){ const el=document.getElementById(id); if(!el) ret
   el.textContent = n ? ('· '+n+' '+word+(n===1?'':'s')) : '· empty'; }
 
 function renderLog(){ const day=curDay(); const lb=document.getElementById('logBody'); lb.innerHTML='';
-  day.entries.forEach((en,i)=>lb.appendChild(logRow(day,en,i)));
+  day.entries.forEach((en,i)=>lb.appendChild(logCard(day,en,i)));
+  if(!day.entries.length) lb.innerHTML='<div class="empty">No blocks yet — <b>+ Add time block</b> starts the day.</div>';
   setMCount('logCount', day.entries.length, 'block'); }
 function renderCodesTable(){ const day=curDay(); const {byCode}=dayTotals(day);
   const cb=document.getElementById('codeBody'); cb.innerHTML='';
-  day.codes.filter(c=>!isStdCode(c)).forEach(c=>cb.appendChild(codeRow(day,c,byCode[c.letter]||0)));
-  if(!day.codes.some(c=>!isStdCode(c))) cb.innerHTML='<tr><td colspan="7" class="muted">No custom codes yet — click <b>+ Add code</b> to create one. Standard codes (below) are always available in the log.</td></tr>';
+  day.codes.filter(c=>!isStdCode(c)).forEach(c=>cb.appendChild(codeCard(day,c,byCode[c.letter]||0)));
+  if(!day.codes.some(c=>!isStdCode(c))) cb.innerHTML='<div class="empty">No custom codes yet — <b>+ Add code</b> creates one. Standard codes (below) are always available in the log.</div>';
   setMCount('codeCount', day.codes.filter(c=>!isStdCode(c)).length, 'code');
   renderStdCodesRef(day, byCode); scheduleAutoSync(); }
 // Read-only reference for the reserved standard codes — findable when you forget which letter Training is.
@@ -2304,15 +2330,14 @@ function openMonthBreakdown(){ const ym=document.getElementById('monthPicker').v
   Object.keys(db.timecard.days).filter(d=>d.startsWith(ym)).forEach(d=>{ const day=db.timecard.days[d];
     day.entries.forEach((en,i)=>{ const m=entryMinutes(day,i); const c=codeFor(day,en.code); t[c?categoryOf(c):'admin']+=m; }); });
   renderCatBreakdown('Month · '+ym, t); openModal('catModalBg'); }
-function focusLogCell(rowIndex,which){ const rows=document.querySelectorAll('#logBody tr'); const tr=rows[rowIndex]; if(!tr) return;
-  const el=which==='stop'?tr.querySelector('input[data-stop]'):tr.querySelector('select'); if(el){ el.focus(); try{el.select&&el.select();}catch(e){} } }
+function focusLogCell(rowIndex,which){ const rows=document.querySelectorAll('#logBody .blockcard'); const row=rows[rowIndex]; if(!row) return;
+  const el=which==='stop'?row.querySelector('input[data-stop]'):row.querySelector('select'); if(el){ el.focus(); try{el.select&&el.select();}catch(e){} } }
 function advanceFromStop(i){ const day=curDay();
   if(i>=day.entries.length-1){ const last=day.entries[day.entries.length-1];
     day.entries.push({id:uid(),code:(day.codes[0]||{letter:'x'}).letter,stop:last?last.stop:day.dayStart,desc:''}); }
   renderTimecard(); save(); focusLogCell(i+1,'select'); }
-/* ---- time-log drag reorder ---- */
-let logDragFrom=null;
-function clearLogDropMarks(){ document.querySelectorAll('#logBody tr').forEach(r=>r.classList.remove('drop-above','drop-below','dragging')); }
+/* ---- time-log reorder (▲▼ on the cards; the HTML5 drag path was removed
+   with the table — it never fired on touch anyway) ---- */
 function moveLogEntry(day,from,insertBefore){
   if(from==null) return;
   const arr=day.entries.slice(); const [item]=arr.splice(from,1);
@@ -2320,32 +2345,33 @@ function moveLogEntry(day,from,insertBefore){
   if(idx<0)idx=0; if(idx>arr.length)idx=arr.length;
   arr.splice(idx,0,item); day.entries=arr;
 }
-function logRow(day,en,i){
-  const tr=document.createElement('tr');
-  const tdDrag=document.createElement('td'); tdDrag.className='drag-cell';
-  const handle=document.createElement('span'); handle.className='drag-handle'; handle.textContent='\u283F'; handle.title='Drag to reorder'; handle.setAttribute('draggable','true');
-  handle.addEventListener('dragstart',e=>{ logDragFrom=i; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(i));}catch(_){}
-    tr.classList.add('dragging'); try{e.dataTransfer.setDragImage(tr,24,14);}catch(_){} });
-  handle.addEventListener('dragend',()=>{ logDragFrom=null; clearLogDropMarks(); });
-  tdDrag.appendChild(handle);
-  tr.addEventListener('dragover',e=>{ if(logDragFrom==null) return; e.preventDefault(); e.dataTransfer.dropEffect='move';
-    const rect=tr.getBoundingClientRect(); const below=(e.clientY-rect.top)>rect.height/2;
-    document.querySelectorAll('#logBody tr').forEach(r=>{ if(r!==tr) r.classList.remove('drop-above','drop-below'); });
-    tr.classList.toggle('drop-below',below); tr.classList.toggle('drop-above',!below); });
-  tr.addEventListener('drop',e=>{ if(logDragFrom==null) return; e.preventDefault();
-    const rect=tr.getBoundingClientRect(); const below=(e.clientY-rect.top)>rect.height/2;
-    const insertBefore=below?i+1:i; const from=logDragFrom; logDragFrom=null; clearLogDropMarks();
-    if(from!==insertBefore && from!==insertBefore-1){ moveLogEntry(day,from,insertBefore); renderTimecard(); save(); } });
-  const tdCode=document.createElement('td'); const sel=document.createElement('select');
+/* One time block as a vertical card — every field in one column, nothing
+   sideways. Reorder is ▲▼, not drag: HTML5 drag-and-drop never fires on
+   touch, so the handle was decoration on this surface. */
+function logCard(day,en,i){
+  const card=document.createElement('div'); card.className='blockcard'; card.dataset.row=String(i);
+
+  const top=document.createElement('div'); top.className='bc-top';
+  const mv=document.createElement('div'); mv.className='bc-move';
+  const up=document.createElement('button'); up.className='ghost small'; up.textContent='▲'; up.title='Move this block earlier';
+  up.disabled=(i===0);
+  up.onclick=()=>{ moveLogEntry(day,i,i-1); renderTimecard(); save(); };
+  const dn=document.createElement('button'); dn.className='ghost small'; dn.textContent='▼'; dn.title='Move this block later';
+  dn.disabled=(i===day.entries.length-1);
+  dn.onclick=()=>{ moveLogEntry(day,i,i+2); renderTimecard(); save(); };
+  mv.appendChild(up); mv.appendChild(dn); top.appendChild(mv);
+
+  const sel=document.createElement('select');
   day.codes.forEach(c=>{ const o=document.createElement('option'); o.value=c.letter; o.textContent=codeOptionLabel(c); if(c.letter===en.code)o.selected=true; sel.appendChild(o); });
-  // code change refreshes totals/codes only (NOT the log) so keyboard focus survives for fast Tab entry
-  sel.onchange=()=>{ en.code=sel.value; save(); renderCodesTable(); renderTotals(); }; tdCode.appendChild(sel);
+  // code change refreshes totals/codes only (NOT the log) so keyboard focus survives for fast entry
+  sel.onchange=()=>{ en.code=sel.value; save(); renderCodesTable(); renderTotals(); };
+  top.appendChild(sel);
 
-  const tdStart=document.createElement('td'); tdStart.className='start-cell'; tdStart.textContent=fmt12(entryStart(day,i))||'--';
-
-  const tdStop=document.createElement('td');
+  const mid=document.createElement('div'); mid.className='bc-mid';
+  const startEl=document.createElement('span'); startEl.className='bc-start'; startEl.textContent=fmt12(entryStart(day,i))||'--';
+  const arrow=document.createElement('span'); arrow.className='bc-arrow'; arrow.textContent='→';
   const stop=document.createElement('input'); stop.type='text'; stop.inputMode='numeric'; stop.setAttribute('data-stop','1');
-  stop.placeholder='1045'; stop.style.width='104px'; stop.value=fmt12(en.stop);
+  stop.className='bc-stop'; stop.placeholder='1045'; stop.value=fmt12(en.stop);
   let skipBlur=false;
   const commit=()=>{ en.stop=parseTimeInput(stop.value); };
   stop.addEventListener('focus',()=>{ try{stop.select();}catch(e){} });
@@ -2353,34 +2379,51 @@ function logRow(day,en,i){
   stop.addEventListener('keydown',e=>{
     if(e.key==='Enter' || (e.key==='Tab' && !e.shiftKey)){ e.preventDefault(); skipBlur=true; commit(); save(); advanceFromStop(i); }
   });
-  tdStop.appendChild(stop);
-
-  const tdDur=document.createElement('td'); tdDur.className='num dur-cell'; tdDur.textContent=fmtH(entryMinutes(day,i));
+  const dur=document.createElement('span'); dur.className='bc-dur'; dur.textContent=fmtH(entryMinutes(day,i));
   const sM=toMin(entryStart(day,i)), eM=toMin(en.stop);
-  if(sM!=null && eM!=null && eM<sM){ tdDur.classList.add('var-neg'); tdDur.title='Stop is before start'; tdDur.textContent='⚠ 0.00'; stop.style.borderColor='var(--danger)'; }
-  const tdDesc=document.createElement('td'); const desc=document.createElement('input'); desc.value=en.desc||''; desc.placeholder='(optional note)';
-  desc.onchange=()=>{ en.desc=desc.value; save(); }; tdDesc.appendChild(desc);
-  const tdDel=document.createElement('td'); tdDel.style.whiteSpace='nowrap';
+  if(sM!=null && eM!=null && eM<sM){ dur.classList.add('var-neg'); dur.title='Stop is before start'; dur.textContent='⚠ 0.00'; stop.style.borderColor='var(--danger)'; }
+  const acts=document.createElement('span'); acts.className='bc-acts';
   const bellBtn=document.createElement('button'); bellBtn.className='ghost small'; bellBtn.textContent='🔔';
-  bellBtn.title="Ring the tinker's bell for this block"; bellBtn.style.marginRight='6px';
+  bellBtn.title="Ring the tinker's bell for this block";
   bellBtn.onclick=()=>bellFromEntry(i);
-  const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕';
+  const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕'; del.title='Delete this block';
   del.onclick=()=>{ day.entries.splice(i,1); renderTimecard(); save(); };
-  tdDel.appendChild(bellBtn); tdDel.appendChild(del);
-  tr.append(tdDrag,tdCode,tdStart,tdStop,tdDur,tdDesc,tdDel); return tr;
-}
-function codeRow(day,c,mins){
-  const tr=document.createElement('tr');
-  const tdL=document.createElement('td'); tdL.className='codecell'; tdL.textContent=c.letter;
-  const tdClient=document.createElement('td'); const ci=document.createElement('input'); ci.value=c.client||''; ci.placeholder='Client';
-  ci.onchange=()=>{ c.client=ci.value; renderTimecard(); save(); }; tdClient.appendChild(ci);
-  const tdBill=document.createElement('td'); const bi=document.createElement('input'); bi.value=c.billing||''; bi.placeholder='C3'; bi.style.width='62px';
-  bi.onchange=()=>{ c.billing=bi.value; renderTimecard(); save(); }; tdBill.appendChild(bi);
-  const tdType=document.createElement('td');   // category is derived from the linked project's type (read-only)
-  tdType.innerHTML='<span class="typedot" style="background:'+CAT[categoryOf(c)].color+'"></span>'+CAT[categoryOf(c)].label;
+  acts.appendChild(bellBtn); acts.appendChild(del);
+  mid.append(startEl,arrow,stop,dur);
 
-  // link cell
-  const tdLink=document.createElement('td'); tdLink.className='linkcell';
+  /* actions ride the note row: at 390px the times row can't also hold them
+     without wrapping them onto an orphan line */
+  const note=document.createElement('div'); note.className='bc-note';
+  const desc=document.createElement('input'); desc.value=en.desc||''; desc.placeholder='(optional note)';
+  desc.onchange=()=>{ en.desc=desc.value; save(); }; note.append(desc,acts);
+
+  card.append(top,mid,note); return card;
+}
+/* One billing code as a vertical card: identity + hours on top, the
+   sync pair stacked below, so nothing needs a sideways hunt. */
+function codeCard(day,c,mins){
+  const card=document.createElement('div'); card.className='codecard';
+
+  const top=document.createElement('div'); top.className='cc-top';
+  const letter=document.createElement('span'); letter.className='cc-letter'; letter.textContent=c.letter;
+  const ci=document.createElement('input'); ci.value=c.client||''; ci.placeholder='Client';
+  ci.onchange=()=>{ c.client=ci.value; renderTimecard(); save(); };
+  const hrs=document.createElement('span'); hrs.className='cc-hrs'; hrs.textContent=fmtH(mins);
+  const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕'; del.title='Delete this code';
+  del.onclick=()=>{ if(day.entries.some(e=>e.code===c.letter)){ alert('Code in use in the log. Reassign those blocks first.'); return; }
+    day.codes=day.codes.filter(x=>x!==c); renderTimecard(); save(); };
+  top.append(letter,ci,hrs,del);
+
+  const mid=document.createElement('div'); mid.className='cc-mid';
+  const bi=document.createElement('input'); bi.className='cc-bill'; bi.value=c.billing||''; bi.placeholder='C3';
+  bi.onchange=()=>{ c.billing=bi.value; renderTimecard(); save(); };
+  const cat=document.createElement('span');   // category is derived from the linked project's type (read-only)
+  cat.innerHTML='<span class="typedot" style="background:'+CAT[categoryOf(c)].color+'"></span>'+CAT[categoryOf(c)].label;
+  mid.append(bi,cat);
+
+  const sync=document.createElement('div'); sync.className='cc-sync';
+  const lbl=document.createElement('span'); lbl.className='cc-synclabel'; lbl.textContent='Sync to Journal (optional)';
+  sync.appendChild(lbl);
   const projSel=document.createElement('select');
   const none=document.createElement('option'); none.value=''; none.textContent='— no sync —'; projSel.appendChild(none);
   const projOpts=syncableProjects().slice();
@@ -2390,7 +2433,7 @@ function codeRow(day,c,mins){
     const p=db.journal.projects.find(x=>x.id===c.linkProjectId);
     if(p){ c.client=p.clientCode||p.name; c.billing=''; }  // link drives display; clear stale bill until a section is picked
     renderTimecard(); save(); };
-  tdLink.appendChild(projSel);
+  sync.appendChild(projSel);
 
   const linkedProj=db.journal.projects.find(x=>x.id===c.linkProjectId);
   if(linkedProj){
@@ -2400,21 +2443,16 @@ function codeRow(day,c,mins){
     secSel.onchange=()=>{ c.linkSection=secSel.value;
       if(c.linkSection) c.billing=extractPrefix(c.linkSection);  // refresh bill to match the chosen section
       renderTimecard(); save(); };
-    tdLink.appendChild(secSel);
+    sync.appendChild(secSel);
   }
   // status pill
   const pill=document.createElement('span');
   if(!c.linkProjectId){ pill.className='pill none'; pill.textContent='not synced'; }
   else if(!c.linkSection){ pill.className='pill warn'; pill.textContent='pick a section'; }
   else { pill.className='pill ok'; pill.textContent='↪ '+(linkedProj?linkedProj.clientCode||linkedProj.name:'?')+' / '+c.linkSection; }
-  tdLink.appendChild(pill);
+  sync.appendChild(pill);
 
-  const tdH=document.createElement('td'); tdH.className='num'; tdH.innerHTML='<span class="typedot t-'+c.type+'"></span>'+fmtH(mins);
-  const tdDel=document.createElement('td'); const del=document.createElement('button'); del.className='ghost small'; del.textContent='✕';
-  del.onclick=()=>{ if(day.entries.some(e=>e.code===c.letter)){ alert('Code in use in the log. Reassign those blocks first.'); return; }
-    day.codes=day.codes.filter(x=>x!==c); renderTimecard(); save(); }; tdDel.appendChild(del);
-
-  tr.append(tdL,tdClient,tdBill,tdType,tdLink,tdH,tdDel); return tr;
+  card.append(top,mid,sync); return card;
 }
 function addEntry(){ const day=curDay(); const last=day.entries.length?day.entries[day.entries.length-1].stop:day.dayStart;
   const first=(day.codes[0]||{letter:'x'}).letter; day.entries.push({id:uid(),code:first,stop:last,desc:''}); renderTimecard(); save();
