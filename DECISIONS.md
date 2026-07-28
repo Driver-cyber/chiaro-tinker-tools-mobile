@@ -194,6 +194,38 @@
       app, all five rooms plus the open sheet at `scrollWidth` exactly 390,
       the panel fitting the viewport, and eight-figure sums rendering whole.
 
+* **[2026-07-26] v0.5.0 — M1 opens: the desktop-shaped tables fold away
+  (Chad, from the phone).**
+    * *Chad's read:* the Time Log and Daily Codes tables are seven-column
+      desktop surfaces — "not really designed for mobile and I probably
+      won't use those on mobile except maybe rarely." Correct: time entry
+      is a sit-down act, and the desktop is right there.
+    * *Decision:* both panels become collapsible and **start collapsed** on
+      the mobile surface. Each header carries a live count (`· 5 blocks`,
+      `· 2 codes`) so a shut drawer still says what's in it — closed, not
+      hidden. Tapping the header opens it; the header's own controls
+      (Day start, **+ Add …**) never toggle the drawer, and they're hidden
+      while it's shut, since adding a block you can't see is a trap.
+    * *State is session-only, deliberately:* an expanded drawer stays open
+      across re-renders and room switches while Chad is working, and a
+      fresh open starts calm again. That's the Open lens answered — the
+      phone's Time Card opens to the day's total, the bell, and the plan,
+      not a squint. No db field, so no schema change and no lockstep.
+    * **First deliberate layout divergence from the desktop sibling** — the
+      point of the split, finally exercised. Desktop keeps both tables open;
+      it has the room. Divergence of surface: yes. Of data model: never.
+    * *Bug caught in-harness:* an inline `style="display:flex"` on the Time
+      Log's action group outranked the collapsed rule, stranding the
+      controls on a shut drawer. Styling moved into the class. Standing
+      lesson: inline styles beat stylesheet state rules — keep state-driven
+      properties out of `style=` attributes.
+    * *Verified* at 390×844 with touch emulation and real taps: both panels
+      collapsed on load with correct counts, tables not rendered, actions
+      hidden; header tap expands and shows all rows; **+ Add time block**
+      adds without collapsing and updates the count; expansion survives
+      `renderTimecard()` and room switches; a reload starts calm again;
+      `scrollWidth` still exactly 390.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

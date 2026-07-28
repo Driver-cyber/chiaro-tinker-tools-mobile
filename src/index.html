@@ -340,6 +340,22 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Mobile-collapsible panels ----------
+   The Time Log and Codes tables are 7-column desktop surfaces; on a phone
+   they're a squint. They collapse to a titled header (with a count, so the
+   drawer says what's in it) and start CLOSED — the phone opens calm: the
+   day's total, the bell, the plan. Deliberate divergence from the desktop
+   sibling, which keeps both tables open. Session-only state: expanding
+   holds while you work, and a fresh open starts calm again. */
+.mhead{cursor:pointer;user-select:none;}
+.mcarrot{display:inline-block;transition:transform .18s;}
+.mpanel:not(.collapsed) .mcarrot{transform:rotate(90deg);}
+.mpanel.collapsed > *:not(h3){display:none;}
+/* styling lives here, not inline: an inline display:flex would outrank the
+   collapsed rule below and leave the controls stranded on a shut drawer */
+.mactions{display:flex;align-items:center;gap:14px;font-weight:400;}
+.mpanel.collapsed .mactions{display:none;}
+.mcount{font-weight:400;font-size:12px;white-space:nowrap;}
 /* ---------- Scratch sheet — a pocket tool, not a room (mobile-tuned) ---------- */
 .pocket-btn{font-size:15px;line-height:1;padding:7px 10px;opacity:.6;}
 .pocket-btn:hover{opacity:1;}
@@ -428,7 +444,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.4.4</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.5.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -670,9 +686,10 @@ body.bell-full-lock{overflow:hidden;}
         <div class="lbl">Total Logged today &nbsp;·&nbsp; ▸ breakdown</div><div class="val" id="cTotal">0.00</div></div>
     </div>
 
-    <div class="panel">
-      <h3><span>Time Log</span>
-        <span style="display:flex;align-items:center;gap:14px;font-weight:400">
+    <div class="panel mpanel collapsed" id="logPanel">
+      <h3 class="mhead" onclick="mpanelToggle(this,event)">
+        <span><span class="mcarrot">▸</span> Time Log <span class="muted mcount" id="logCount"></span></span>
+        <span class="mactions">
           <span class="muted">Day start
             <input type="text" inputmode="numeric" id="dayStart" placeholder="0800" style="width:90px;display:inline-block;padding:4px 6px" onchange="updateDayStart(this.value)"></span>
           <button class="small" onclick="addEntry()">+ Add time block</button>
@@ -687,9 +704,10 @@ body.bell-full-lock{overflow:hidden;}
       <div class="hint">Set only the <b>code</b> and <b>stop</b> time — start auto-fills from the previous block. Drag the <b>⠿</b> handle to reorder blocks; times recompute to match the new order.</div>
     </div>
 
-    <div class="panel">
-      <h3><span>Daily Codes, Totals &amp; Journal Sync</span>
-        <button class="small" onclick="addCode()">+ Add code</button>
+    <div class="panel mpanel collapsed" id="codesPanel">
+      <h3 class="mhead" onclick="mpanelToggle(this,event)">
+        <span><span class="mcarrot">▸</span> Daily Codes, Totals &amp; Journal Sync <span class="muted mcount" id="codeCount"></span></span>
+        <span class="mactions"><button class="small" onclick="addCode()">+ Add code</button></span>
       </h3>
       <div class="body">
         <table>
@@ -1161,8 +1179,11 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.4.4 — the mobile surface of
-   CTT. v0.4.4: no more involuntary iOS zoom — every form control is 16px on
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.5.0 — the mobile surface of
+   CTT. v0.5.0: M1 begins — the Time Log and Codes tables (desktop-shaped,
+   7 columns) collapse on the phone and start closed, each header carrying
+   a count. First deliberate layout divergence from the desktop sibling.
+   v0.4.4: no more involuntary iOS zoom — every form control is 16px on
    touch pointers (Safari auto-zooms below that and never zooms back).
    v0.4.3: scratch composition bar (lockstep with desktop v0.8.3).
    v0.4.2: scratch numbers in accounting format (commas + two decimals,
@@ -2236,12 +2257,24 @@ function renderLoggedDays(){
     chip.textContent=new Date(y,m-1,da).toLocaleDateString(undefined,{month:'short',day:'numeric'});
     chip.onclick=()=>{ db.timecard.currentDate=d; renderTimecard(); save(); }; wrap.appendChild(chip); });
 }
+/* Collapsed mobile panels: toggling never fires from the header's own
+   controls (Day start, + Add …) — those are real actions, not the drawer. */
+function mpanelToggle(h,ev){
+  if(ev && ev.target && ev.target.closest('button,input,select,label,a,details,summary')) return;
+  h.parentElement.classList.toggle('collapsed');
+}
+/* the drawer says what's inside without being opened */
+function setMCount(id,n,word){ const el=document.getElementById(id); if(!el) return;
+  el.textContent = n ? ('· '+n+' '+word+(n===1?'':'s')) : '· empty'; }
+
 function renderLog(){ const day=curDay(); const lb=document.getElementById('logBody'); lb.innerHTML='';
-  day.entries.forEach((en,i)=>lb.appendChild(logRow(day,en,i))); }
+  day.entries.forEach((en,i)=>lb.appendChild(logRow(day,en,i)));
+  setMCount('logCount', day.entries.length, 'block'); }
 function renderCodesTable(){ const day=curDay(); const {byCode}=dayTotals(day);
   const cb=document.getElementById('codeBody'); cb.innerHTML='';
   day.codes.filter(c=>!isStdCode(c)).forEach(c=>cb.appendChild(codeRow(day,c,byCode[c.letter]||0)));
   if(!day.codes.some(c=>!isStdCode(c))) cb.innerHTML='<tr><td colspan="7" class="muted">No custom codes yet — click <b>+ Add code</b> to create one. Standard codes (below) are always available in the log.</td></tr>';
+  setMCount('codeCount', day.codes.filter(c=>!isStdCode(c)).length, 'code');
   renderStdCodesRef(day, byCode); scheduleAutoSync(); }
 // Read-only reference for the reserved standard codes — findable when you forget which letter Training is.
 function renderStdCodesRef(day, byCode){ const el=document.getElementById('stdCodesRef'); if(!el) return;
