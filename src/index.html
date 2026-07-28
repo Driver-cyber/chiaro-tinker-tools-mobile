@@ -131,15 +131,10 @@ body.cream .health.over{background:#fee2e2;color:#991b1b}
 table{width:100%;border-collapse:collapse;}
 th,td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left;font-size:13px;}
 th{position:sticky;top:0;background:var(--panel);z-index:2;color:var(--muted);}
-.section-col{width:190px;font-weight:700}
-.col-num{width:96px}
 #reportBody tr.clickrow{cursor:pointer}
 #reportBody tr.clickrow:hover td{background:rgba(127,127,127,.10)}
 table.role-preparer .col-rev{display:none}
 table.role-reviewer .col-prep{display:none}
-.group-row td{background:var(--group);cursor:pointer;font-weight:700;user-select:none;}
-.group-row .chev{display:inline-block;width:14px;transition:transform .15s ease;}
-.group-row.collapsed .chev{transform:rotate(-90deg);}
 .group-count{color:var(--muted);font-weight:500;margin-left:8px;}
 .note-box{min-height:64px;resize:vertical;font-size:13px;}
 .cell-actions{display:flex;gap:6px;margin-top:6px;}
@@ -340,6 +335,30 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Mobile card layout for the journal's sections ----------
+   Same reframe as the time log: a six-column row (section · status · budget ·
+   actual · variance · scratchpad) is a desktop instrument. Here each section
+   is a card — checkbox and name on top, the numbers on their own line with
+   variance trailing, the scratchpad full width beneath. */
+.seccard{border:1px solid var(--border);border-radius:12px;background:var(--group);
+  padding:10px;display:flex;flex-direction:column;gap:8px;}
+.sc-head{display:flex;align-items:center;gap:8px;}
+.sc-name{flex:1;min-width:0;font-weight:700;}
+.sc-status select{width:100%;}
+.sc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+.sc-meta .cell-actions{margin-left:auto;}
+.sc-nums{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sc-num{display:flex;align-items:center;gap:6px;}
+.sc-num label{font-size:12px;color:var(--muted);}
+.sc-num input{width:78px;}
+.sc-var{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;}
+.sc-note textarea{width:100%;min-height:72px;}
+.sc-note .cell-actions{justify-content:flex-end;margin-top:6px;}
+.groupcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:9px 12px;font-weight:700;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;}
+.groupcard .chev{display:inline-block;transition:transform .15s ease;}
+.groupcard.collapsed .chev{transform:rotate(-90deg);}
+.groupcard .group-count{margin-left:auto;color:var(--muted);font-weight:400;}
 /* ---------- Mobile card layout for the time log + codes ----------
    The seven-column tables are desktop instruments; on a phone they force a
    sideways hunt. Here every row becomes a vertical card — all of a block's
@@ -475,7 +494,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.6.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.7.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -645,16 +664,7 @@ body.bell-full-lock{overflow:hidden;}
       <div class="stat"><div class="stat-label">OPEN</div><div class="stat-value" id="openCount">0</div></div>
     </div>
     <input class="search" id="searchBox" placeholder="Search sections, notes..." oninput="renderSections()" />
-    <div class="table-wrap">
-      <table id="journalTable">
-        <thead><tr>
-          <th class="section-col">Section</th><th>Status</th>
-          <th class="col-num">Budget</th><th class="col-num">Actual</th><th class="col-num">Variance</th>
-          <th>Scratchpad</th>
-        </tr></thead>
-        <tbody id="sectionsTable"></tbody>
-      </table>
-    </div>
+    <div class="cardlist" id="sectionsTable"></div>
   </div>
 </div>
 </div>
@@ -1201,8 +1211,11 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.6.0 — the mobile surface of
-   CTT. v0.6.0: the time log and codes tables become vertical CARDS —
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.7.0 — the mobile surface of
+   CTT. v0.7.0: the Project Journal follows the Time Card — each section is
+   a card (checkbox + name / numbers + variance / scratchpad) instead of a
+   six-column row. No tables left anywhere on this surface.
+   v0.6.0: the time log and codes tables become vertical CARDS —
    every field in one column, no sideways hunt; reorder is ▲▼ (HTML5 drag
    never fired on touch). One renderer, not two: this repo is the phone.
    v0.5.0: M1 begins — the Time Log and Codes tables (desktop-shaped,
@@ -1967,26 +1980,27 @@ function buildGroups(sections){
   return GROUPS.map(g=>map[g.id]).filter(g=>g.rows.length);
 }
 function renderSections(){
-  const tbody=document.getElementById('sectionsTable'); tbody.innerHTML='';
+  const list=document.getElementById('sectionsTable'); list.innerHTML='';
   const search=document.getElementById('searchBox').value.toLowerCase().trim(); const searching=search.length>0;
   const proj=currentProject();
   if(isFlat(proj)){   // ORDO / Simple: one clean ordered list, no accounting group headers
-    proj.sections.forEach(s=>{ if(searching && !JSON.stringify(s).toLowerCase().includes(search)) return; tbody.appendChild(buildSectionRow(s)); });
+    proj.sections.forEach(s=>{ if(searching && !JSON.stringify(s).toLowerCase().includes(search)) return; list.appendChild(buildSectionCard(s)); });
+    if(!list.childElementCount) list.innerHTML='<div class="empty">'+(searching?'Nothing matches that search.':'No steps yet.')+'</div>';
     return;
   }
   buildGroups(proj.sections).forEach(group=>{
     const rows=group.rows.filter(r=>!searching||JSON.stringify(r.s).toLowerCase().includes(search));
     if(searching && !rows.length) return;
     const collapsed=!searching && !!db.journal.collapsedGroups[group.def.id];
-    const gtr=document.createElement('tr'); gtr.className='group-row'+(collapsed?' collapsed':'');
-    const gtd=document.createElement('td'); gtd.colSpan=6;
-    gtd.innerHTML='<span class="chev">▼</span> <span></span><span class="group-count"></span>';
-    gtd.querySelectorAll('span')[1].textContent=group.def.label;
-    gtd.querySelector('.group-count').textContent='('+rows.length+')';
-    gtd.onclick=()=>toggleGroup(group.def.id); gtr.appendChild(gtd); tbody.appendChild(gtr);
+    const g=document.createElement('div'); g.className='groupcard'+(collapsed?' collapsed':'');
+    g.innerHTML='<span class="chev">▼</span><span></span><span class="group-count"></span>';
+    g.querySelectorAll('span')[1].textContent=group.def.label;
+    g.querySelector('.group-count').textContent='('+rows.length+')';
+    g.onclick=()=>toggleGroup(group.def.id); list.appendChild(g);
     if(collapsed) return;
-    rows.forEach(r=>tbody.appendChild(buildSectionRow(r.s)));
+    rows.forEach(r=>list.appendChild(buildSectionCard(r.s)));
   });
+  if(!list.childElementCount) list.innerHTML='<div class="empty">Nothing matches that search.</div>';
 }
 /* Chiaro happy-checkbox — one reusable primitive for every checkbox in CTT:
    progress-sweep cross-out on its label + a warm ember burst at completion. */
@@ -2017,47 +2031,63 @@ function makeCheck(isDone, label, onToggle){
   });
   return {wrap, box};
 }
-function buildSectionRow(s){
-  const tr=document.createElement('tr');
+/* One journal section as a vertical card — the six-column row folded into
+   four stacked lines so nothing needs a sideways hunt on a phone. */
+function buildSectionCard(s){
+  const card=document.createElement('div'); card.className='seccard';
   const variance=Number(s.budget||0)-effActual(s);
   const flat=isFlat(currentProject()); const isDone=s.status==='Complete';
 
-  const tdName=document.createElement('td'); tdName.className='section-col';
-  const nm=document.createElement('div'); nm.textContent=(s.custom?'★ ':'')+s.name;
-  if(flat){ nm.className='ck-label'+(isDone?' ck-done':''); }
-  const upd=document.createElement('div'); upd.style.cssText='font-size:12px;color:var(--muted);margin-top:6px'; upd.textContent='Updated: '+(s.updated||'--');
-  const acts=document.createElement('div'); acts.className='cell-actions'; acts.style.marginTop='5px';
-  const ren=document.createElement('button'); ren.className='small ghost'; ren.textContent='✎ Rename'; ren.onclick=()=>renameSection(s.id); acts.appendChild(ren);
-  if(s.custom){ const dl=document.createElement('button'); dl.className='small ghost'; dl.textContent='✕ Delete'; dl.onclick=()=>deleteSection(s.id); acts.appendChild(dl); }
-  tdName.append(nm,upd,acts);
-
-  const tdStatus=document.createElement('td');
+  const head=document.createElement('div'); head.className='sc-head';
+  const nm=document.createElement('div'); nm.className='sc-name'; nm.textContent=(s.custom?'★ ':'')+s.name;
   if(flat){
     // ORDO / Simple: the happy checkbox — checking a step marks it done (status Complete).
+    nm.classList.add('ck-label'); if(isDone) nm.classList.add('ck-done');
     const c=makeCheck(isDone, nm, d=>updateField(s.id,'status', d?'Complete':'In Prep'));
-    tdStatus.appendChild(c.wrap);
+    head.append(c.wrap, nm);
   } else {
+    head.appendChild(nm);
+  }
+  card.appendChild(head);
+
+  if(!flat){   // audit binder keeps its full status vocabulary, on its own line
+    const st=document.createElement('div'); st.className='sc-status';
     const sel=document.createElement('select');
-    STATUSES.forEach(st=>{ const o=document.createElement('option'); o.textContent=st; if(s.status===st)o.selected=true; sel.appendChild(o); });
-    sel.onchange=()=>updateField(s.id,'status',sel.value); tdStatus.appendChild(sel);
+    STATUSES.forEach(x=>{ const o=document.createElement('option'); o.textContent=x; if(s.status===x)o.selected=true; sel.appendChild(o); });
+    sel.onchange=()=>updateField(s.id,'status',sel.value); st.appendChild(sel); card.appendChild(st);
   }
 
-  const tdB=document.createElement('td'); const inB=document.createElement('input'); inB.type='number'; inB.value=s.budget;
-  inB.onchange=()=>updateField(s.id,'budget',inB.value); tdB.appendChild(inB);
+  const meta=document.createElement('div'); meta.className='sc-meta';
+  const upd=document.createElement('span'); upd.textContent='Updated: '+(s.updated||'--');
+  const acts=document.createElement('span'); acts.className='cell-actions';
+  const ren=document.createElement('button'); ren.className='small ghost'; ren.textContent='✎ Rename'; ren.onclick=()=>renameSection(s.id); acts.appendChild(ren);
+  if(s.custom){ const dl=document.createElement('button'); dl.className='small ghost'; dl.textContent='✕ Delete'; dl.onclick=()=>deleteSection(s.id); acts.appendChild(dl); }
+  meta.append(upd,acts); card.appendChild(meta);
 
-  const tdA=document.createElement('td'); const inA=document.createElement('input'); inA.type='number'; inA.value=s.actual;
-  inA.onchange=()=>updateField(s.id,'actual',inA.value); tdA.appendChild(inA);
-  const syn=syncedTotal(s); if(syn>0){ const sn=document.createElement('div'); sn.className='synced-note';
-    sn.textContent='+'+syn.toFixed(2)+' synced = '+effActual(s).toFixed(2); tdA.appendChild(sn); }
+  const nums=document.createElement('div'); nums.className='sc-nums';
+  const mkNum=(labelText,val,key)=>{
+    const w=document.createElement('span'); w.className='sc-num';
+    const l=document.createElement('label'); l.textContent=labelText;
+    const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal'; inp.value=val;
+    inp.onchange=()=>updateField(s.id,key,inp.value);
+    w.append(l,inp); return {w,inp};
+  };
+  const b=mkNum('Budget', s.budget, 'budget');
+  const a=mkNum('Actual', s.actual, 'actual');
+  const v=document.createElement('span'); v.className='sc-var'+(variance>0?' var-pos':(variance<0?' var-neg':''));
+  v.textContent=variance.toFixed(2);
+  nums.append(b.w,a.w,v); card.appendChild(nums);
 
-  const tdV=document.createElement('td'); tdV.textContent=variance.toFixed(2);
-  tdV.className=variance>0?'var-pos':(variance<0?'var-neg':'');
+  const syn=syncedTotal(s);
+  if(syn>0){ const sn=document.createElement('div'); sn.className='synced-note';
+    sn.textContent='+'+syn.toFixed(2)+' synced = '+effActual(s).toFixed(2); card.appendChild(sn); }
 
-  tr.append(tdName,tdStatus,tdB,tdA,tdV, noteCell(s,'scratch',true));
-  return tr;
+  card.appendChild(noteBlock(s,'scratch'));
+  return card;
 }
-function noteCell(s,field,withCopy=false){
-  const td=document.createElement('td'); const ta=document.createElement('textarea'); ta.className='note-box'; ta.value=s[field]||'';
+function noteBlock(s,field){
+  const box=document.createElement('div'); box.className='sc-note';
+  const ta=document.createElement('textarea'); ta.className='note-box'; ta.value=s[field]||'';
   // Auto-save as you type (debounced) — data + cloud only, no re-render so focus survives.
   let tt=null; ta.addEventListener('input',()=>{ clearTimeout(tt); tt=setTimeout(()=>{
     const live=currentProject().sections.find(x=>x.id===s.id); if(!live || live[field]===ta.value) return;
@@ -2066,7 +2096,7 @@ function noteCell(s,field,withCopy=false){
   const actions=document.createElement('div'); actions.className='cell-actions';
   const exp=document.createElement('button'); exp.className='small ghost'; exp.textContent='Expand ↗'; exp.onclick=()=>openExpanded(s.id,field); actions.appendChild(exp);
   const cp=document.createElement('button'); cp.className='small ghost'; cp.textContent='Copy'; cp.onclick=()=>copyText(s[field]||''); actions.appendChild(cp);
-  td.append(ta,actions); return td;
+  box.append(ta,actions); return box;
 }
 function updateField(id,key,val){
   const s=currentProject().sections.find(x=>x.id===id); if(!s) return;
