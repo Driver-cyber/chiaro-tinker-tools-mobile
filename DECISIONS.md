@@ -259,6 +259,33 @@
     * *Follow-on parked:* the Month Report table has the same shape problem
       and would want the same treatment. Not built — Chad's call.
 
+* **[2026-07-26] v0.7.0 — the Project Journal follows the Time Card into
+  cards (Chad).**
+    * *Decision:* the sections table (section · status · budget · actual ·
+      variance · scratchpad — six columns) becomes one **card per section**:
+      happy checkbox + name on top, `Updated:` and ✎/✕ on a meta line, then
+      Budget/Actual with the variance trailing right, then the scratchpad
+      full width with Expand/Copy beneath. Same reframe as v0.6.0, same
+      reasoning: wide lines work on a desktop, cards work in a hand.
+    * *Both project shapes preserved:* flat (ORDO/Simple) keeps the happy
+      checkbox with its ember burst; the audit binder keeps its full
+      STATUSES select — moved to its own line, since a status dropdown and
+      a section name can't share 390px — and its group headers become
+      tappable `.groupcard` rows with counts and the same chevron.
+    * *`noteCell()` → `noteBlock()`:* the scratchpad's debounced auto-save,
+      expand, and copy behaviour is unchanged; only its container stopped
+      being a `<td>`.
+    * **No tables remain anywhere on the mobile surface** — the last one
+      (Month Report) aside, which is parked. Dead CSS retired with the
+      markup (`.section-col`, `.col-num`, `.group-row*`).
+    * *Verified* at 390×844 with touch emulation and real taps: 7 section
+      cards, zero tables in the journal pane, nothing overflows, page stays
+      exactly 390 wide; a card carries checkbox/name/budget/variance/
+      scratchpad/rename; a budget edit persists and the variance recomputes
+      live; the checkbox still flips status; the scratchpad still saves;
+      search still filters (with an honest empty state); and forcing the
+      audit template renders 2 group cards + 7 status selects.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
