@@ -286,6 +286,32 @@
       search still filters (with an honest empty state); and forcing the
       audit template renders 2 group cards + 7 status selects.
 
+* **[2026-07-26] v0.8.0 — the Month Report becomes cards; the last table on
+  the mobile surface is gone (Chad).**
+    * *Decision:* the report's four-column table (client · type · hours ·
+      share bar) becomes one **card per client/project**: name + hours + ▸
+      on top, category dot + share percent beneath, the bar across the
+      bottom. The whole card is the tap target for the note trail.
+    * *Sorting survives the table's death:* the sortable `<th>`s become a
+      **sort bar** of three chips (Client · Type · Hours) carrying the same
+      `.sortcaret` spans, so `sortReport()`/`updateSortCarets()` work
+      unchanged.
+    * *`copyReport()` now reads DATA, not markup.* It used to scrape
+      `#reportBody tr` cells — which the card reframe would have silently
+      broken. It reads the last rendered rows (`_reportRows`) instead. A
+      DOM-scraping export is a latent trap in any renderer change; worth
+      remembering the next time one shows up.
+    * *Copy reworded for touch* ("Tap any card…"), and the dead
+      `#reportBody tr.clickrow` CSS retired with the markup.
+    * **`grep -c "<table"` on this repo now returns 0.** Every working
+      surface on the phone is cards.
+    * *Verified* at 390×844 with touch emulation: 2 report cards, zero
+      tables anywhere in the document, nothing overflows, page exactly 390
+      wide; card carries label/hours/category/percent/bar; sort chips
+      re-order and the caret moves; `copyReport()` produces
+      "Longview — 4.50 / Vetters C3 — 2.00" from data; tapping a card opens
+      the note-trail modal.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

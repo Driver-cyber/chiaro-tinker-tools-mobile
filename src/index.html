@@ -131,8 +131,6 @@ body.cream .health.over{background:#fee2e2;color:#991b1b}
 table{width:100%;border-collapse:collapse;}
 th,td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left;font-size:13px;}
 th{position:sticky;top:0;background:var(--panel);z-index:2;color:var(--muted);}
-#reportBody tr.clickrow{cursor:pointer}
-#reportBody tr.clickrow:hover td{background:rgba(127,127,127,.10)}
 table.role-preparer .col-rev{display:none}
 table.role-reviewer .col-prep{display:none}
 .group-count{color:var(--muted);font-weight:500;margin-left:8px;}
@@ -335,6 +333,17 @@ body.modal-open{overflow:hidden;}
 .modal.cch pre b{font-weight:800;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
+/* ---------- Mobile card layout for the month report ---------- */
+.repcard{border:1px solid var(--border);border-radius:12px;background:var(--group);
+  padding:10px;display:flex;flex-direction:column;gap:7px;cursor:pointer;}
+.repcard:active{background:rgba(242,162,74,.10);}
+.rc-top{display:flex;align-items:center;gap:8px;}
+.rc-label{flex:1;min-width:0;font-weight:700;}
+.rc-hrs{font-variant-numeric:tabular-nums;font-weight:600;flex:none;}
+.rc-mid{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+.rc-pct{margin-left:auto;font-variant-numeric:tabular-nums;}
+.sortbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.sortbar .lbl{font-size:12px;color:var(--muted);}
 /* ---------- Mobile card layout for the journal's sections ----------
    Same reframe as the time log: a six-column row (section · status · budget ·
    actual · variance · scratchpad) is a desktop instrument. Here each section
@@ -494,7 +503,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.7.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.8.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -778,17 +787,15 @@ body.bell-full-lock{overflow:hidden;}
     </div>
     <div class="panel">
       <h3>By Client / Project <span class="muted" id="rRange"></span></h3>
-      <div class="hint" style="margin:0 0 6px">Click any row for the full note trail — every time-entry note for that code this month, plus the linked journal notes. Handy when someone asks where the hours went.</div>
+      <div class="hint" style="margin:0 0 6px">Tap any card for the full note trail — every time-entry note for that code this month, plus the linked journal notes. Handy when someone asks where the hours went.</div>
       <div class="body">
-        <table>
-          <thead><tr>
-            <th class="sortable" onclick="sortReport('label')">Client / Project <span class="sortcaret" data-k="label"></span></th>
-            <th class="sortable" onclick="sortReport('type')">Type <span class="sortcaret" data-k="type"></span></th>
-            <th class="num sortable" onclick="sortReport('mins')">Hours <span class="sortcaret" data-k="mins"></span></th>
-            <th style="width:36%">Share</th>
-          </tr></thead>
-          <tbody id="reportBody"></tbody>
-        </table>
+        <div class="sortbar">
+          <span class="lbl">Sort</span>
+          <button class="ghost small" onclick="sortReport('label')">Client <span class="sortcaret" data-k="label"></span></button>
+          <button class="ghost small" onclick="sortReport('type')">Type <span class="sortcaret" data-k="type"></span></button>
+          <button class="ghost small" onclick="sortReport('mins')">Hours <span class="sortcaret" data-k="mins"></span></button>
+        </div>
+        <div class="cardlist" id="reportBody"></div>
       </div>
     </div>
   </div>
@@ -1211,8 +1218,10 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.7.0 — the mobile surface of
-   CTT. v0.7.0: the Project Journal follows the Time Card — each section is
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.8.0 — the mobile surface of
+   CTT. v0.8.0: the Month Report becomes cards with a sort bar — the LAST
+   table on this surface is gone.
+   v0.7.0: the Project Journal follows the Time Card — each section is
    a card (checkbox + name / numbers + variance / scratchpad) instead of a
    six-column row. No tables left anywhere on this surface.
    v0.6.0: the time log and codes tables become vertical CARDS —
@@ -2556,12 +2565,18 @@ function renderReport(){
   const rows=Object.values(byClient).sort(reportComparator);
   updateSortCarets();
   const body=document.getElementById('reportBody'); body.innerHTML='';
-  rows.forEach(r=>{ const tr=document.createElement('tr'); const pct=r.mins/grand*100;
-    tr.className='clickrow'; tr.title='Click for all entry notes + linked journal notes';
-    tr.innerHTML='<td>'+escapeHtml(r.label)+' <span class="muted" style="font-size:11px">▸</span></td><td><span class="typedot" style="background:'+CAT[r.cat].color+'"></span>'+CAT[r.cat].label+'</td><td class="num">'+fmtH(r.mins)+'</td><td><div class="bar"><i style="width:'+pct+'%;background:'+CAT[r.cat].color+'"></i></div></td>';
-    tr.onclick=()=>codeBreakdown(r.label,r.cat);
-    body.appendChild(tr); });
-  if(!rows.length) body.innerHTML='<tr><td colspan="4" class="muted">No entries this month.</td></tr>';
+  _reportRows=rows;   // copyReport reads the data, not the DOM
+  rows.forEach(r=>{ const pct=r.mins/grand*100;
+    const card=document.createElement('div'); card.className='repcard';
+    card.title='Tap for all entry notes + linked journal notes';
+    card.innerHTML='<div class="rc-top"><span class="rc-label">'+escapeHtml(r.label)+'</span>'
+      +'<span class="rc-hrs">'+fmtH(r.mins)+'</span><span class="muted">▸</span></div>'
+      +'<div class="rc-mid"><span class="typedot" style="background:'+CAT[r.cat].color+'"></span>'+CAT[r.cat].label
+      +'<span class="rc-pct">'+pct.toFixed(0)+'%</span></div>'
+      +'<div class="bar"><i style="width:'+pct+'%;background:'+CAT[r.cat].color+'"></i></div>';
+    card.onclick=()=>codeBreakdown(r.label,r.cat);
+    body.appendChild(card); });
+  if(!rows.length) body.innerHTML='<div class="empty">No entries this month.</div>';
 }
 
 /* ---- copy helpers ---- */
@@ -2618,8 +2633,9 @@ function copySummary(){ const day=curDay(); const {t,byCode}=dayTotals(day);
   if(wins.length){ plain.push('', 'Day plan:'); html.push('', '<b>Day plan:</b>');
     wins.forEach(w=>{ const mk=w.done?'[x]':'[ ]'; plain.push('  '+mk+' '+w.text); html.push('  '+mk+' '+escapeHtml(w.text)); }); }
   showCopy('Daily Summary for CCH', plain.join('\n'), html.join('\n')); }
-function copyReport(){ const rows=[...document.querySelectorAll('#reportBody tr')].map(tr=>{ const td=tr.querySelectorAll('td'); if(td.length<3) return ''; return td[0].textContent+' — '+td[2].textContent; }).filter(Boolean);
-  showCopy('Month Report ('+document.getElementById('monthPicker').value+')', rows.join('\n')); }
+let _reportRows=[];   // last rendered report rows — copy reads data, not markup
+function copyReport(){ const lines=_reportRows.map(r=>(r.label||'(unassigned)')+' — '+fmtH(r.mins));
+  showCopy('Month Report ('+document.getElementById('monthPicker').value+')', lines.join('\n')); }
 function showCopy(title,text,html){ copyBuffer=text; document.getElementById('copyTitle').textContent=title;
   const pre=document.getElementById('copyText'); if(html!=null) pre.innerHTML=html; else pre.textContent=text; openModal('copyModalBg'); }
 function doCopy(){ copyText(copyBuffer); }
