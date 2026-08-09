@@ -331,6 +331,13 @@ body.modal-open{overflow:hidden;}
 .modal.cch{width:88vw;max-width:88vw;height:85vh;display:flex;flex-direction:column;resize:both;overflow:hidden;min-width:380px;min-height:300px;}
 .modal.cch pre{flex:1;white-space:pre;max-height:none;font-size:14px;line-height:1.5;}
 .modal.cch pre b{font-weight:800;}
+/* a project's companion app — its own workshop, distinct from the bench.
+   Only appears for projects that actually have one. */
+.workshop-btn{font-size:13px;padding:5px 11px;text-decoration:none;display:inline-flex;
+  align-items:center;gap:6px;border:1px solid var(--accent);color:var(--accent);
+  border-radius:9px;background:rgba(242,162,74,.07);white-space:nowrap;}
+.workshop-btn:hover{background:rgba(242,162,74,.16);}
+.has-shop{color:var(--accent);font-size:11px;margin-left:5px;}
 .hidden{display:none}
 @media(max-width:880px){.stats,.tcards{grid-template-columns:repeat(2,1fr)}.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static}}
 /* ---------- Mobile card layout for the month report ---------- */
@@ -503,7 +510,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.8.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.9.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -633,6 +640,7 @@ body.bell-full-lock{overflow:hidden;}
     <div class="title-row">
       <h1 class="project-title" id="projectTitle">New Project</h1>
       <span class="health none" id="healthBadge">No Budget Set</span>
+      <a class="workshop-btn hidden" id="workshopBtn" target="_blank" rel="noopener" title="Open this project's companion app">⧉ Workshop</a>
     </div>
     <div class="clientcode-row">
       <label class="muted">Time-card client code
@@ -643,6 +651,9 @@ body.bell-full-lock{overflow:hidden;}
       </label>
       <label class="muted" style="display:inline-flex;align-items:center;gap:6px">
         <input type="checkbox" id="recurringChk" style="width:auto" onchange="updateRecurring(this.checked)"> Recurring (enables the period ritual)
+      </label>
+      <label class="muted">Workshop link
+        <input id="appUrlInput" placeholder="https://… (a companion app for this project)" onchange="updateAppUrl(this.value)" style="min-width:260px">
       </label>
       <span class="muted" id="clientCodeHint"></span>
     </div>
@@ -1218,8 +1229,9 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.8.0 — the mobile surface of
-   CTT. v0.8.0: the Month Report becomes cards with a sort bar — the LAST
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.9.0 — the mobile surface of
+   CTT. v0.9.0: project workshop links (appUrl), in lockstep with desktop
+   v0.9.1. v0.8.0: the Month Report becomes cards with a sort bar — the LAST
    table on this surface is gone.
    v0.7.0: the Project Journal follows the Time Card — each section is
    a card (checkbox + name / numbers + variance / scratchpad) instead of a
@@ -1828,6 +1840,7 @@ function renderJournal(){
     ? 'In time-card library — syncable as “'+p.clientCode.trim()+'”'
     : 'Blank = notes-only. Hidden from the time card, never syncs.';
   document.getElementById('projectNotes').value=p.notes||'';
+  renderWorkshop(p);
   document.getElementById('archiveChk').checked=!!p.archived;
   document.getElementById('recurringChk').checked=!!p.recurring;
   document.getElementById('nextPeriodBtn').classList.toggle('hidden',!p.recurring);
@@ -1864,7 +1877,9 @@ function renderRecent(){
     .sort((a,b)=>new Date(b.modifiedDate)-new Date(a.modifiedDate)).slice(0,5).forEach(p=>{
     const d=document.createElement('div'); d.className='recent-project'+(p.id===currentProject().id?' active':'');
     d.innerHTML='<strong></strong><br><small class="muted"></small>';
-    d.querySelector('strong').textContent=p.name+(p.archived?' · archived':''); d.querySelector('small').textContent=p.modifiedDate||'';
+    d.querySelector('strong').textContent=p.name+(p.archived?' · archived':'');
+    if(p.appUrl){ const g=document.createElement('span'); g.className='has-shop'; g.textContent='⧉'; g.title='Has a workshop app'; d.querySelector('strong').appendChild(g); }
+    d.querySelector('small').textContent=p.modifiedDate||'';
     d.onclick=()=>{ db.journal.currentProjectId=p.id; renderJournal(); save(); }; wrap.appendChild(d);
   });
 }
@@ -2112,6 +2127,20 @@ function updateField(id,key,val){
   if(key==='budget'||key==='actual') val=Number(val||0);
   s[key]=val; s.updated=now(); currentProject().modifiedDate=now();
   renderStats(); renderRecent(); if(key==='budget'||key==='actual') renderSections(); save();
+}
+/* Companion apps: a project can point at its own web app (Gertie's build
+   log, say) without CTT trying to contain it. One optional string on the
+   project — absent everywhere it isn't used, so a missing field is simply
+   no door. Schema-lockstep: this field exists in both sibling repos. */
+function updateAppUrl(v){ let u=(v||'').trim();
+  if(u && !/^https?:\/\//i.test(u)) u='https://'+u;   // paste a bare domain, get a working link
+  currentProject().appUrl=u; currentProject().modifiedDate=now(); renderJournal(); save(); }
+function renderWorkshop(p){
+  const btn=document.getElementById('workshopBtn'), inp=document.getElementById('appUrlInput');
+  if(inp) inp.value=p.appUrl||'';
+  if(!btn) return;
+  if(p.appUrl){ btn.href=p.appUrl; btn.classList.remove('hidden'); }
+  else btn.classList.add('hidden');
 }
 function updateClientCode(v){ currentProject().clientCode=(v||'').trim(); currentProject().modifiedDate=now(); renderJournal(); renderTimecard(); save(); }
 function toggleGroup(g){ db.journal.collapsedGroups[g]=!db.journal.collapsedGroups[g]; renderSections(); save(); }

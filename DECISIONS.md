@@ -312,6 +312,16 @@
       "Longview — 4.50 / Vetters C3 — 2.00" from data; tapping a card opens
       the note-trail modal.
 
+* **[2026-07-26] v0.9.0 — project workshop links (lockstep with desktop
+  v0.9.1).** A project can carry an optional `appUrl` pointing at its own
+  companion web app; a **⧉ Workshop** button appears in the project header
+  when set, and a **⧉** mark beside it in Recent. Rationale, decision, and
+  the "tabs are rooms, this is a door" reasoning live in the desktop repo's
+  entry for the same date. **Schema-lockstep:** new project field, landed
+  both sides the same hour; no `normalize()` change needed since the field
+  is read with `||''` — a db predating it simply has no door, verified
+  against that legacy shape. Zero mobile-specific divergence.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
