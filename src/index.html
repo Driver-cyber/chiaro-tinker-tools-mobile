@@ -510,7 +510,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.9.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.9.1</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1229,8 +1229,12 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.9.0 — the mobile surface of
-   CTT. v0.9.0: project workshop links (appUrl), in lockstep with desktop
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.9.1 — the mobile surface of
+   CTT. v0.9.1: workshop links accept a same-origin path without being mangled
+   into https:///path (lockstep with desktop v0.9.2). Note the trap: appUrl is
+   synced, and this surface lives on a different origin than the desktop one,
+   so a relative path only resolves on whichever surface hosts the companion.
+   v0.9.0: project workshop links (appUrl), in lockstep with desktop
    v0.9.1. v0.8.0: the Month Report becomes cards with a sort bar — the LAST
    table on this surface is gone.
    v0.7.0: the Project Journal follows the Time Card — each section is
@@ -2133,7 +2137,8 @@ function updateField(id,key,val){
    project — absent everywhere it isn't used, so a missing field is simply
    no door. Schema-lockstep: this field exists in both sibling repos. */
 function updateAppUrl(v){ let u=(v||'').trim();
-  if(u && !/^https?:\/\//i.test(u)) u='https://'+u;   // paste a bare domain, get a working link
+  // paste a bare domain, get a working link — but leave same-origin paths (/gertie/) alone
+  if(u && !/^(https?:)?\/\//i.test(u) && u[0]!=='/') u='https://'+u;
   currentProject().appUrl=u; currentProject().modifiedDate=now(); renderJournal(); save(); }
 function renderWorkshop(p){
   const btn=document.getElementById('workshopBtn'), inp=document.getElementById('appUrlInput');
