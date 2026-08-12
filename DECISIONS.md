@@ -349,6 +349,44 @@
       textareas here. Markdown is the stored format on both sides, so the
       data is compatible today; this is a rendering gap, not a schema one.
 
+* **[2026-08-12] The lockstep rule gets a machine (v0.9.3).** Schema lockstep
+  has been a rule in both constitutions since the split and was enforced by
+  nothing but memory. It now has CI.
+    * *Decision — the suite lives in the DESKTOP repo only, and this repo's
+      workflow clones it.* A drift-guard duplicated into both repos can drift
+      between its own copies, which defeats the point. `.github/workflows/
+      lockstep.yml` here is the mirror image: clone the desktop sibling
+      (public, anonymous, no token), run its corpus against this build.
+    * *Decision — CI prefers a matching branch name on the sibling*, falling
+      back to `main`. Schema work in flight lives on twin branches; testing a
+      feature branch against the sibling's `main` would report drift that
+      isn't real.
+    * *Proof it works, from the first hour:* desktop was pushed 26 seconds
+      before this repo. In that window the surfaces genuinely disagreed, CI
+      went red and named the field. Not a false alarm — the mechanism working
+      on the exact failure it exists for.
+    * **The window between two pushes is a real, if brief, drift window.**
+      Nothing to fix — it closes on its own — but red CI in that gap is
+      expected and should not be treated as a broken workflow.
+
+* **[2026-08-12] `normalizeProject` creates `p.sections` (v0.9.3, lockstep
+  with desktop v0.9.4).** `normalizeProject` guarded `(p.sections||[])`;
+  `migrateStatuses`, one line later in the same `runMigrations()`, did a bare
+  `p.sections.forEach`. A section-less project threw during boot — white
+  screen, not a degraded one.
+    * Reachable from the **sync pull**, the disk restore and the undo-import.
+      The file-picker import was already safe via `migrateV7Project`. One
+      entrance defended, four not.
+    * Matters more on this surface: the sync pull is how this repo receives
+      the desktop's shapes, so a divergence over there arrives here as a
+      crash rather than as a merge conflict.
+    * *Pattern worth grepping for:* a defensive `||[]` sitting next to an
+      undefended `.forEach` on the same field. The guard proves somebody
+      already knew the field could be missing; where that knowledge stopped
+      one line short is where the crash lives.
+    * `sw.js` `CACHE` bumped to `ctt-mobile-v0.9.3` in step, per the release
+      convention.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
