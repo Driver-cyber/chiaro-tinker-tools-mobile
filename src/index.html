@@ -510,7 +510,7 @@ body.bell-full-lock{overflow:hidden;}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.9.3</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.10.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -908,7 +908,7 @@ body.bell-full-lock{overflow:hidden;}
   <p style="font-size:13px;line-height:1.6">
     <strong>Merge</strong> adds the imported data to what you have.<br>
     <strong>Replace</strong> discards current data and loads only this backup.<br>
-    <span class="muted">Either way a one-step undo copy is kept on this device — <em>Storage &amp; Cloud Sync → Undo last import</em>.</span></p>
+    <span class="muted">Either way a one-step undo copy is kept on this device — <em>Storage &amp; Cloud Sync → Undo last import or pull</em>.</span></p>
   <div class="modal-actions">
     <button class="ghost" onclick="cancelImport()">Cancel</button>
     <button class="danger" onclick="applyImport('replace')">Replace</button>
@@ -967,7 +967,7 @@ body.bell-full-lock{overflow:hidden;}
       <button class="small ghost" onclick="backupNow()">Back up now</button>
       <select id="lsRestoreSel" class="small" style="width:auto"><option value="">Restore from backup…</option></select>
       <button class="small ghost" onclick="restoreFromSelected()">Restore</button>
-      <button class="small ghost" id="undoImportBtn" style="display:none" onclick="undoImport()">↩ Undo last import</button>
+      <button class="small ghost" id="undoImportBtn" style="display:none" onclick="undoImport()">↩ Undo last import or pull</button>
     </div>
     <p class="sync-note" id="lsMsg" style="min-height:16px;margin-top:6px"></p>
   </div>
@@ -1231,8 +1231,14 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.9.3 — the mobile surface of
-   CTT. v0.9.3: normalizeProject now CREATES p.sections when missing rather
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.10.0 — the mobile surface of
+   CTT. v0.10.0: sync MERGES instead of replacing (schema lockstep with desktop
+   v0.10.0). Matters most on this surface: the pull is how the phone receives
+   the desktop's work, and it used to overwrite everything done here since the
+   last sync. Pull now snapshots for undo, then unions by record — projects by
+   id (later modifiedAt wins), days by date (later lastEdit wins). SCHEMA:
+   projects gain modifiedAt (epoch ms), backfilled in normalizeProject.
+   v0.9.3: normalizeProject now CREATES p.sections when missing rather
    than merely tolerating its absence — migrateStatuses walks it unguarded on
    the very next line, so a section-less project threw during boot (sync pull,
    disk restore, undo-import). Schema lockstep with desktop v0.9.4; found by
@@ -1281,6 +1287,12 @@ body.bell-full-lock{overflow:hidden;}
 /* ---------- shared helpers ---------- */
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function now(){ return new Date().toLocaleString(); }
+/* One place that stamps a project as edited. modifiedDate stays a display
+   string; modifiedAt is the machine-readable ordering key. A locale string
+   cannot be compared — "12/1/2026" sorts before "8/12/2026" — and the sync
+   merge needs a real ordering, so the two are always written together. */
+function touch(p){ if(p){ p.modifiedDate=now(); p.modifiedAt=Date.now(); } return p; }
+
 function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function todayStr(){ return iso(new Date()); }
 function dowName(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}); }
@@ -1834,6 +1846,11 @@ function normalizeProject(p){
   // sync pull, disk restore, undo-import — would throw here and take the
   // whole boot with it. Tolerating a missing array isn't enough; create it.
   if(!Array.isArray(p.sections)) p.sections=[];
+  // SCHEMA LOCKSTEP: modifiedAt (epoch ms) is the sync merge's ordering key.
+  // Legacy records only have the locale-string modifiedDate — parse it best
+  // effort, and fall back to 0 ("oldest") so an unknown age never wins a
+  // collision it hasn't earned.
+  if(typeof p.modifiedAt!=='number'){ const _t=Date.parse(p.modifiedDate||''); p.modifiedAt=isNaN(_t)?0:_t; }
   if(p.clientCode===undefined) p.clientCode='';
   if(p.notes===undefined) p.notes='';
   if(p.role===undefined) p.role='both';
@@ -1866,10 +1883,10 @@ function renderJournal(){
   document.getElementById('notesToggle').textContent='📝 Project Notes '+(notesOpen?'▾':'▸');
   renderTypeFilter(); renderProjectPicker(); renderRecent(); renderStats(); renderSections();
 }
-function updateArchived(c){ currentProject().archived=!!c; currentProject().modifiedDate=now(); renderJournal(); renderTimecard(); save(); }
-function updateRecurring(c){ currentProject().recurring=!!c; currentProject().modifiedDate=now(); renderJournal(); save(); }
+function updateArchived(c){ currentProject().archived=!!c; touch(currentProject()); renderJournal(); renderTimecard(); save(); }
+function updateRecurring(c){ currentProject().recurring=!!c; touch(currentProject()); renderJournal(); save(); }
 function toggleProjectNotes(){ db.journal.notesOpen=!db.journal.notesOpen; renderJournal(); save(); }
-function updateProjectNotes(v){ currentProject().notes=v; currentProject().modifiedDate=now(); renderRecent(); save(); }
+function updateProjectNotes(v){ currentProject().notes=v; touch(currentProject()); renderRecent(); save(); }
 function openProjectNotesEditor(){ const p=currentProject(); editorCtx={scope:'project'};
   document.getElementById('editorTitle').textContent='Project Notes — '+p.name;
   document.getElementById('editorMeta').innerHTML='Project: '+escapeHtml(p.name)+(p.clientCode?'<br>Client code: '+escapeHtml(p.clientCode):'')+'<br>Created: '+escapeHtml(p.createdDate)+'<br>Modified: '+escapeHtml(p.modifiedDate);
@@ -1920,7 +1937,7 @@ function rollForwardProject(){
   const name=prompt('Name for the new (next-year) project:', src.name); if(name===null) return;
   if(!confirm('Create "'+(name.trim()||src.name)+'" with the same sections, budgets, client code and role (actuals, notes & open items cleared), and archive "'+src.name+'"?')) return;
   const np=JSON.parse(JSON.stringify(src));
-  np.id=uid(); np.name=name.trim()||src.name; np.archived=false; np.createdDate=now(); np.modifiedDate=now();
+  np.id=uid(); np.name=name.trim()||src.name; np.archived=false; np.createdDate=now(); touch(np);
   np.sections.forEach(s=>{ s.id=uid(); s.actual=0; s.preparer=''; s.reviewer=''; s.scratch=''; s.status='In Prep'; s.updated=''; s.timeSync={}; }); // keep name, budget, custom; carry project notes (contacts)
   src.archived=true;
   db.journal.projects.push(np); db.journal.currentProjectId=np.id;
@@ -1980,7 +1997,7 @@ function beginNextPeriod(){
   const src=db.journal.projects.find(p=>p.id===carryProjectId); if(!src) return;
   const name=(document.getElementById('carryNewName').value||'').trim()||bumpPeriodName(src.name);
   const np=JSON.parse(JSON.stringify(src));
-  np.id=uid(); np.name=name; np.archived=false; np.recurring=true; np.createdDate=now(); np.modifiedDate=now();
+  np.id=uid(); np.name=name; np.archived=false; np.recurring=true; np.createdDate=now(); touch(np);
   np.sections.forEach(s=>{ s.id=uid(); s.actual=0; s.scratch=''; s.preparer=''; s.reviewer=''; s.status='In Prep'; s.updated=''; s.timeSync={}; });
   let carried=0, resolved=0;
   carryItems.forEach(it=>{
@@ -1991,7 +2008,7 @@ function beginNextPeriod(){
   src.sections.forEach((s,si)=>{ if(!(s.scratch||'').trim()) return;
     s.scratch=s.scratch.split('\n').map(line=>{ const t=line.trim();
       return (t && carryItems.some(it=>it.sec===si && it.text===t && it.resolved)) ? line.replace(t,'✓ '+t) : line; }).join('\n'); });
-  src.archived=true; src.modifiedDate=now();
+  src.archived=true; touch(src);
   db.journal.projects.push(np); db.journal.currentProjectId=np.id;
   seedProjectCodes(np);
   carryItems=[]; carryProjectId=null;
@@ -2131,7 +2148,7 @@ function noteBlock(s,field){
   // Auto-save as you type (debounced) — data + cloud only, no re-render so focus survives.
   let tt=null; ta.addEventListener('input',()=>{ clearTimeout(tt); tt=setTimeout(()=>{
     const live=currentProject().sections.find(x=>x.id===s.id); if(!live || live[field]===ta.value) return;
-    live[field]=ta.value; live.updated=now(); currentProject().modifiedDate=now(); save(); },800); });
+    live[field]=ta.value; live.updated=now(); touch(currentProject()); save(); },800); });
   ta.onchange=()=>updateField(s.id,field,ta.value);
   const actions=document.createElement('div'); actions.className='cell-actions';
   const exp=document.createElement('button'); exp.className='small ghost'; exp.textContent='Expand ↗'; exp.onclick=()=>openExpanded(s.id,field); actions.appendChild(exp);
@@ -2141,7 +2158,7 @@ function noteBlock(s,field){
 function updateField(id,key,val){
   const s=currentProject().sections.find(x=>x.id===id); if(!s) return;
   if(key==='budget'||key==='actual') val=Number(val||0);
-  s[key]=val; s.updated=now(); currentProject().modifiedDate=now();
+  s[key]=val; s.updated=now(); touch(currentProject());
   renderStats(); renderRecent(); if(key==='budget'||key==='actual') renderSections(); save();
 }
 /* Companion apps: a project can point at its own web app (Gertie's build
@@ -2151,7 +2168,7 @@ function updateField(id,key,val){
 function updateAppUrl(v){ let u=(v||'').trim();
   // paste a bare domain, get a working link — but leave same-origin paths (/gertie/) alone
   if(u && !/^(https?:)?\/\//i.test(u) && u[0]!=='/') u='https://'+u;
-  currentProject().appUrl=u; currentProject().modifiedDate=now(); renderJournal(); save(); }
+  currentProject().appUrl=u; touch(currentProject()); renderJournal(); save(); }
 function renderWorkshop(p){
   const btn=document.getElementById('workshopBtn'), inp=document.getElementById('appUrlInput');
   if(inp) inp.value=p.appUrl||'';
@@ -2159,7 +2176,7 @@ function renderWorkshop(p){
   if(p.appUrl){ btn.href=p.appUrl; btn.classList.remove('hidden'); }
   else btn.classList.add('hidden');
 }
-function updateClientCode(v){ currentProject().clientCode=(v||'').trim(); currentProject().modifiedDate=now(); renderJournal(); renderTimecard(); save(); }
+function updateClientCode(v){ currentProject().clientCode=(v||'').trim(); touch(currentProject()); renderJournal(); renderTimecard(); save(); }
 function toggleGroup(g){ db.journal.collapsedGroups[g]=!db.journal.collapsedGroups[g]; renderSections(); save(); }
 function expandAll(){ GROUPS.forEach(g=>db.journal.collapsedGroups[g.id]=false); renderSections(); save(); }
 function collapseAll(){ GROUPS.forEach(g=>db.journal.collapsedGroups[g.id]=true); renderSections(); save(); }
@@ -2197,27 +2214,27 @@ function createProject(){
   seedProjectCodes(p);
   closeModal('projectModalBg'); renderJournal(); renderTimecard(); save();
 }
-function renameProject(){ const n=prompt('Rename project',currentProject().name); if(!n) return; currentProject().name=n.trim(); currentProject().modifiedDate=now(); renderJournal(); save(); }
-function duplicateProject(){ const c=JSON.parse(JSON.stringify(currentProject())); c.id=uid(); c.name+=' Copy'; c.createdDate=now(); c.modifiedDate=now();
+function renameProject(){ const n=prompt('Rename project',currentProject().name); if(!n) return; currentProject().name=n.trim(); touch(currentProject()); renderJournal(); save(); }
+function duplicateProject(){ const c=JSON.parse(JSON.stringify(currentProject())); c.id=uid(); c.name+=' Copy'; c.createdDate=now(); touch(c);
   c.sections.forEach(s=>{ s.id=uid(); s.timeSync={}; }); db.journal.projects.push(c); db.journal.currentProjectId=c.id; renderJournal(); save(); }
 function deleteProject(){ if(db.journal.projects.length===1){ alert('Cannot delete the last project.'); return; }
   if(confirm('Delete "'+currentProject().name+'"?')){ const id=currentProject().id; db.journal.projects=db.journal.projects.filter(p=>p.id!==id);
     Object.values(db.timecard.days).forEach(day=>day.codes.forEach(c=>{ if(c.linkProjectId===id){ c.linkProjectId=''; c.linkSection=''; } }));
     db.journal.currentProjectId=db.journal.projects[0].id; renderJournal(); renderTimecard(); save(); } }
 function addCustomSection(){ const n=prompt('Custom section name (e.g. "C1 - Cleanup Review")'); if(!n) return;
-  currentProject().sections.push(makeSection(n.trim(),true)); currentProject().modifiedDate=now(); renderJournal(); save(); }
+  currentProject().sections.push(makeSection(n.trim(),true)); touch(currentProject()); renderJournal(); save(); }
 function renameSection(id){ const p=currentProject(); const s=p.sections.find(x=>x.id===id); if(!s) return;
   const n=prompt('Rename section', s.name); if(n===null) return; const nn=n.trim(); if(!nn || nn===s.name) return;
   if(p.sections.some(x=>x!==s && x.name===nn)){ alert('A section with that name already exists in this project.'); return; }
   const old=s.name; s.name=nn;
   // keep any time-card sync links pointed at this section
   Object.values(db.timecard.days).forEach(day=>day.codes.forEach(c=>{ if(c.linkProjectId===p.id && c.linkSection===old) c.linkSection=nn; }));
-  p.modifiedDate=now(); renderJournal(); renderTimecard(); save(); }
+  touch(p); renderJournal(); renderTimecard(); save(); }
 function deleteSection(id){ const p=currentProject(); const s=p.sections.find(x=>x.id===id); if(!s) return;
   if(!confirm('Delete section "'+s.name+'"? Any synced time on it will be removed.')) return;
   p.sections=p.sections.filter(x=>x.id!==id);
   Object.values(db.timecard.days).forEach(day=>day.codes.forEach(c=>{ if(c.linkProjectId===p.id && c.linkSection===s.name){ c.linkSection=''; } }));
-  p.modifiedDate=now(); renderJournal(); renderTimecard(); save(); }
+  touch(p); renderJournal(); renderTimecard(); save(); }
 
 /* markdown export */
 function projectToMarkdown(p){
@@ -2263,9 +2280,9 @@ function openExpanded(id,field){ const s=currentProject().sections.find(x=>x.id=
 function commitExpanded(){ if(!editorCtx) return;
   const v=document.getElementById('bigEditor').value;
   if(editorCtx.scope==='project'){ const p=currentProject();
-    if(p.notes!==v){ p.notes=v; p.modifiedDate=now(); save(); } }
+    if(p.notes!==v){ p.notes=v; touch(p); save(); } }
   else { const s=currentProject().sections.find(x=>x.id===editorCtx.id);
-    if(s && s[editorCtx.field]!==v){ s[editorCtx.field]=v; s.updated=now(); currentProject().modifiedDate=now(); save(); } } }
+    if(s && s[editorCtx.field]!==v){ s[editorCtx.field]=v; s.updated=now(); touch(currentProject()); save(); } } }
 function saveExpanded(){ commitExpanded(); editorCtx=null; closeModal('editorModalBg'); renderJournal(); }
 (function(){ const ed=document.getElementById('bigEditor'); let t=null;
   ed.addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(commitExpanded,800); }); })();
@@ -2564,7 +2581,7 @@ function applySyncForDay(date){
     let t=targets.find(x=>x.pid===c.linkProjectId&&x.sec===c.linkSection); if(!t){ t={pid:c.linkProjectId,sec:c.linkSection,hours:0}; targets.push(t); } t.hours+=mins/60; });
   let count=0,total=0;
   targets.forEach(t=>{ const p=db.journal.projects.find(x=>x.id===t.pid); if(!p) return; const s=p.sections.find(x=>x.name===t.sec); if(!s) return;
-    if(!s.timeSync) s.timeSync={}; s.timeSync[date]=Number(t.hours.toFixed(2)); p.modifiedDate=now(); count++; total+=t.hours; });
+    if(!s.timeSync) s.timeSync={}; s.timeSync[date]=Number(t.hours.toFixed(2)); touch(p); count++; total+=t.hours; });
   return {count,total};
 }
 function syncDayToJournal(){
@@ -3693,6 +3710,64 @@ function showConflict(cloudEdit, localEdit){
 }
 function conflictChoose(choice){ closeModal('conflictModalBg'); const r=conflictResolver; conflictResolver=null; if(r) r(choice); }
 
+/* ---------------------------------------------------------------------
+   MERGE, not replace. A pull used to overwrite the whole db, so work done
+   on two devices between syncs meant one side lost its day outright.
+
+   Union by record:
+     - projects: by id; on collision the later modifiedAt wins
+     - days:     by date; on collision the later top-level lastEdit wins
+
+   DELIBERATELY day-level, never entry-level. An entry stores only its stop
+   time — its start IS the previous entry's stop (see entryStart) — so two
+   chains for the same date cannot be interleaved without inventing times.
+   A "union of entries" would silently corrupt a timeline, which is a worse
+   failure than losing one side of a same-day collision.
+
+   Deletions do not propagate: a union always keeps a record, so a project
+   deleted on one device returns on the next merge. That is the deliberate
+   trade — losing a delete costs a re-delete, losing a record costs the work.
+   --------------------------------------------------------------------- */
+function mergeIncoming(local, incoming){
+  const rep={ projectsKept:[], daysKept:[], projectCollisions:[], dayCollisions:[] };
+  const out=JSON.parse(JSON.stringify(incoming));
+  out.journal=out.journal||{}; out.journal.projects=out.journal.projects||[];
+  out.timecard=out.timecard||{}; out.timecard.days=out.timecard.days||{};
+  const localNewer=(Number(local.lastEdit)||0) > (Number(incoming.lastEdit)||0);
+
+  const idx={}; out.journal.projects.forEach((p,i)=>{ idx[p.id]=i; });
+  ((local.journal||{}).projects||[]).forEach(lp=>{
+    const i=idx[lp.id];
+    if(i===undefined){ out.journal.projects.push(lp); rep.projectsKept.push(lp.name||lp.id); return; }
+    const cp=out.journal.projects[i];
+    if((Number(lp.modifiedAt)||0) > (Number(cp.modifiedAt)||0)){
+      out.journal.projects[i]=lp; rep.projectCollisions.push((lp.name||lp.id)+' (kept this device)');
+    } else if((Number(lp.modifiedAt)||0) < (Number(cp.modifiedAt)||0)){
+      rep.projectCollisions.push((cp.name||cp.id)+' (kept cloud)');
+    }
+  });
+
+  Object.keys(((local.timecard)||{}).days||{}).forEach(d=>{
+    if(!out.timecard.days[d]){ out.timecard.days[d]=local.timecard.days[d]; rep.daysKept.push(d); return; }
+    rep.dayCollisions.push(d);
+    if(localNewer) out.timecard.days[d]=local.timecard.days[d];
+  });
+  return { db: out, report: rep };
+}
+/* Plain-language receipt. The user should never have to guess what a sync
+   just did to their day. */
+function mergeSummary(rep){
+  const kept=rep.projectsKept.length+rep.daysKept.length;
+  const clash=rep.projectCollisions.length+rep.dayCollisions.length;
+  if(!kept && !clash) return 'Pulled latest from cloud — already in step.';
+  const bits=[];
+  if(rep.projectsKept.length) bits.push(rep.projectsKept.length+' project(s) only on this device kept');
+  if(rep.daysKept.length) bits.push(rep.daysKept.length+' day(s) only on this device kept');
+  if(rep.dayCollisions.length) bits.push('both had edits for '+rep.dayCollisions.join(', ')+' — kept the newer copy');
+  if(rep.projectCollisions.length) bits.push('both edited: '+rep.projectCollisions.join('; '));
+  return 'Merged with cloud. '+bits.join('. ')+'.';
+}
+
 async function syncPull(manual){
   if(!isConnected()){ if(manual) syncMsg('No journal connected.',true); return; }
   syncing=true; setSyncDot('busy'); if(manual) syncMsg('Pulling…');
@@ -3700,14 +3775,33 @@ async function syncPull(manual){
     const r=await kvFetch('GET', db.sync.journalId);
     if(r.status===404 || !r.text){ throw new Error('No journal in the cloud for that ID yet — create it first, or check the ID.'); }
     if(r.status!==200) throw new Error('Worker returned '+r.status);
-    const incoming=JSON.parse(r.text); incoming.sync=db.sync; db=normalize(incoming);
+    const incoming=normalize(JSON.parse(r.text));
+    // Pull used to be the one destructive action with no guard at all:
+    // no hash check (push has one), no lastEdit comparison, and no undo
+    // (import got one in v0.9.3 for the identical hazard). It now takes
+    // the snapshot FIRST, then merges instead of overwriting.
+    const safe=snapshotForUndo('pull');
+    const merged=mergeIncoming(db, incoming);
+    const keepSync=db.sync;
+    db=normalize(merged.db); db.sync=keepSync;
     db.sync.myHash=hashStr(r.text); db.sync.lastSync=Date.now();
     runMigrations();
     document.body.classList.toggle('cream',!!db.darkMode);
     if(!currentProject()) db.journal.currentProjectId=(db.journal.projects[0]||{}).id;
     if(!db.timecard.currentDate) db.timecard.currentDate=todayStr();
     save(); renderJournal(); renderTimecard(); if(typeof renderBlueprint==='function') renderBlueprint();
-    setSyncDot('on'); renderSync(); if(manual) syncMsg('Pulled latest from cloud.');
+    renderUndoBtn();
+    // Anything local that survived the merge means the cloud copy is now
+    // stale. Send the merged result back so the two actually converge —
+    // otherwise the next device to pull would resurrect the old shape.
+    const changed=merged.report.projectsKept.length+merged.report.daysKept.length
+                 +merged.report.projectCollisions.length+merged.report.dayCollisions.length;
+    if(changed && db.sync.auto) scheduleAutoPush();
+    setSyncDot('on'); renderSync();
+    if(manual){ let m=mergeSummary(merged.report);
+      if(changed && !db.sync.auto) m+=' Push to send the merged copy back.';
+      if(!safe) m+=' (No undo copy could be saved on this device.)';
+      syncMsg(m); }
   }catch(e){ setSyncDot('err'); syncMsg(e.message,true); }
   finally{ syncing=false; }
 }
