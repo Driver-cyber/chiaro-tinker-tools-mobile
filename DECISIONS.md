@@ -322,6 +322,33 @@
   is read with `||''` — a db predating it simply has no door, verified
   against that legacy shape. Zero mobile-specific divergence.
 
+* **[2026-08-12] Workshop links stop mangling same-origin paths, and import
+  grows an undo.** Two fixes, both landed the same hour as the desktop
+  sibling; details and reasoning live in the desktop repo's entry for this
+  date. The mobile-specific halves:
+    * *`updateAppUrl` no longer prepends `https://` to a path beginning `/`.*
+      The standing rule that fell out of it matters most on this surface:
+      `appUrl` rides the **synced** db, but the two surfaces are on
+      **different origins** (`chiaromobile` vs `chiaro`), so a relative path
+      entered on the desktop resolves against *this* origin on the phone and
+      404s. **Synced fields take absolute URLs.** Visible in the test run —
+      the `/gertie/` case resolved its href against the mobile origin.
+    * *Import takes an undo snapshot before overwriting* (v0.9.2). This is
+      the surface that made it urgent: no file backup (`backupNow()` is
+      `FS_ENABLED`/Tauri only) **and it syncs**, so a wrong file imported on
+      the phone reaches the desktop on the next push. Both modes snapshot —
+      merge included, since days are combined with `Object.assign` and any
+      date in both files is silently overwritten by the incoming one. Sync
+      credentials stripped going in, live ones re-attached coming out. A
+      refused snapshot blocks the import and offers an explicit override.
+    * **Schema-lockstep: unaffected.** The undo buffer lives under its own
+      key (`ctt_import_undo_v1`), outside `db`, so it never enters sync or
+      export.
+    * *Still outstanding for this repo:* **rich notes** (desktop v0.9.0) are
+      not ported — `projectNotes` and the section scratchpads are still plain
+      textareas here. Markdown is the stored format on both sides, so the
+      data is compatible today; this is a rendering gap, not a schema one.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
