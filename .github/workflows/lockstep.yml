@@ -1,0 +1,66 @@
+name: Schema lockstep
+
+# The mirror of the desktop sibling's workflow. The suite itself lives in
+# chiaro-tinker-tools/test/ — one copy, deliberately, because a drift-guard
+# that can itself drift is not a guard. This job clones that repo and runs
+# its corpus against THIS repo's build.
+#
+# Both repos are public, so the clone is anonymous and no token is involved.
+
+on:
+  push:
+    branches: [ main, 'claude/**' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lockstep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mobile
+        uses: actions/checkout@v4
+        with:
+          path: chiaro-tinker-tools-mobile
+
+      # Prefer the SAME branch name on the sibling — a schema change in flight
+      # lives on matching branches in both repos, and that pairing is exactly
+      # what wants testing. Fall back to main when no twin exists.
+      - name: Checkout desktop sibling (owns the suite)
+        run: |
+          REPO=https://github.com/Driver-cyber/chiaro-tinker-tools.git
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          if git ls-remote --exit-code --heads "$REPO" "$BRANCH" >/dev/null 2>&1; then
+            echo "sibling branch: $BRANCH"
+          else
+            echo "no sibling branch '$BRANCH' — falling back to main"
+            BRANCH=main
+          fi
+          git clone --depth 1 --branch "$BRANCH" "$REPO" chiaro-tinker-tools
+          echo "SIBLING_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install jsdom
+        working-directory: chiaro-tinker-tools
+        run: npm install --no-audit --no-fund
+
+      - name: Run the corpus suite
+        working-directory: chiaro-tinker-tools
+        run: npm test
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Schema lockstep" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- mobile:  \`${GITHUB_REF_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- desktop: \`${SIBLING_BRANCH}\` (suite lives here)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "A red run means the two surfaces no longer agree on the db shape." >> "$GITHUB_STEP_SUMMARY"
+          echo "Land the schema change on BOTH repos before merging." >> "$GITHUB_STEP_SUMMARY"
