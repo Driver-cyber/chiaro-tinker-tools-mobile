@@ -479,6 +479,32 @@
   the pre-edit page. Navigate via about:blank (or drop the hash) before
   measuring.
 
+* **[2026-10-30] The pocket FAB goes everywhere and gains the Bell (Chad;
+  desktop v0.13.0 / mobile v0.13.0).** *Revises "mobile-only divergence"
+  above:* desktop adopts the same bottom-right ✦ button, and ▦/÷ leave its
+  appbar too. A third tool joins the arc, **🔔 Bell**, which opens the
+  tinker's bell from any room:
+    * *Desktop:* calls the existing ⧉ pop-out (Document PiP, always-on-top
+      window) directly from the click, so the user gesture holds. If it's
+      already floating it says so rather than opening a second window.
+      Browsers without Document PiP (Safari, Firefox) jump to the Time Card
+      with the bell open.
+    * *Mobile:* iOS has no floating windows, so the equivalent is the bell's
+      **full-screen mode**. The FAB remembers the room it was opened from,
+      shows the Time Card (the full-screen layer lives inside it), grows the
+      bell, and ✕ or Escape returns to that room with the timer still
+      running.
+    * *Labels placed radially:* with three tools, left-hand labels collided
+      with neighbours. Each label now sits just outside its own button along
+      the arc direction, offset by the label box's reach along that
+      direction (|ux|·w/2 + |uy|·h/2), so even the diagonal one clears its
+      button. Asserted: zero overlaps at 360, 390, 430 and 1440 widths.
+    * *Desktop skips hide-while-typing:* there's no on-screen keyboard to
+      dodge, and the Time Card's many inputs would make the button flicker.
+    * *Verified:* FAB suites mobile 19/19, desktop 16/16 (PiP path stubbed
+      and the no-PiP fallback both exercised); Primes 63/61; acceptance 20/20;
+      half-sheet geometry at every size; day map 30/30.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
