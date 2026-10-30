@@ -505,18 +505,87 @@ body.bell-full-lock{overflow:hidden;}
      cell (14px of that is padding) renders eight-figure sums whole. */
   table.scratch td input{font-size:16px;width:112px;}
 }
+/* Primes — prime-or-composite mental math. Ephemeral: no db, no storage. */
+#main-primes{--pc-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}   /* on the pane, so the sheets (outside .pc-wrap) get it too */
+.pc-wrap{max-width:460px;margin:0 auto;box-sizing:border-box;
+  padding:10px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
+.pc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.pc-seg{display:flex;flex:1;max-width:330px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pc-seg button{flex:1;min-height:48px;padding:0 6px;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:14px;font-weight:600}
+.pc-seg button+button{border-left:1px solid var(--border)}
+.pc-seg button.on{background:rgba(242,162,74,.14);color:var(--accent)}
+.pc-streak{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pc-screen{flex:1;display:flex;flex-direction:column}
+.pc-screen.hidden,.pc-streak.hidden{display:none}
+.pc-hero{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:24px 0}
+.pc-title{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:34px;font-weight:600;color:var(--accent);letter-spacing:-.01em}
+.pc-sub{color:var(--muted);font-size:15px;line-height:1.55;margin:12px auto 0;max-width:300px}
+.pc-play{width:100%;min-height:60px;border:none;border-radius:14px;background:var(--accent);color:var(--btn-ink);font-size:20px;font-weight:700}
+.pc-qbox{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:16px 0}
+.pc-num{font-family:var(--pc-mono);font-variant-numeric:tabular-nums;font-size:clamp(80px,27vw,116px);font-weight:700;line-height:1;letter-spacing:.02em}
+.pc-prompt{color:var(--muted);font-size:16px;margin:10px 0 22px}
+.pc-answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.pc-ans{min-height:92px;border-radius:16px;background:var(--panel);color:var(--text);border:1.5px solid var(--accent);font-size:21px;font-weight:700}
+.pc-ans:active{background:rgba(242,162,74,.20)}
+.pc-refs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:12px}
+.pc-refs button{min-height:52px;padding:0 4px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:14px;font-weight:600}
+.pc-verdict{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;font-size:25px;font-weight:600;margin:14px 0 4px}
+.pc-verdict.ok{color:var(--success)}
+.pc-verdict.no{color:color-mix(in srgb,var(--danger) 70%,var(--muted))}
+.pc-truth{font-size:15px;color:var(--muted);margin-bottom:12px}
+.pc-truth b{font-family:var(--pc-mono);color:var(--text)}
+.pc-explain{flex:1;font-size:15px;line-height:1.6}
+.pc-explain p{margin:8px 0}
+.pc-eq{font-family:var(--pc-mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;margin:6px 0 10px}
+.pc-math{font-family:var(--pc-mono);font-variant-numeric:tabular-nums;font-size:14.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0}
+.pc-math b{font-family:inherit;color:var(--accent)}
+.pc-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.pc-chips button{min-width:48px;min-height:48px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:10px;font-family:var(--pc-mono);font-size:16px}
+.pc-chips button:active,.pc-refs button:active{background:rgba(242,162,74,.14)}
+.pc-hint{font-size:13px;color:var(--muted)}
+.pc-next{margin-top:18px}
+.pc-sheet-bg{position:fixed;inset:0;z-index:950;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+.pc-sheet-bg.show{display:flex}
+.pc-sheet{width:100%;max-width:520px;max-height:84dvh;display:flex;flex-direction:column;box-sizing:border-box;
+  background:var(--bg);border:1px solid var(--border);border-bottom:none;border-radius:18px 18px 0 0;
+  padding-bottom:env(safe-area-inset-bottom);animation:pcUp .18s ease-out}
+@keyframes pcUp{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){ .pc-sheet{animation:none} }
+.pc-sheet-head{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 16px;border-bottom:1px solid var(--border)}
+.pc-sheet-head h3{flex:1;margin:0;font-size:17px}
+.pc-x{min-width:48px;min-height:48px;background:transparent;border:none;color:var(--text);font-size:19px}
+.pc-back{min-height:48px;padding:0 10px 0 0;background:transparent;border:none;color:var(--accent);font-size:15px;font-weight:600}
+.pc-back.hidden{display:none}
+.pc-sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 16px 20px}
+.pc-rows{font-size:14.5px}   /* grid rows, not tables — the mobile surface keeps none */
+.pc-row{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:9px 6px;border-bottom:1px solid var(--border)}
+.pc-row.pc-head{padding:6px;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pc-row .pc-p{font-family:var(--pc-mono);font-weight:700;font-size:16px}
+.pc-row .pc-ex{display:block;margin-top:3px;font-family:var(--pc-mono);font-size:13px;color:var(--muted)}
+.pc-sq .pc-row{grid-template-columns:1fr 1fr}
+.pc-sq .pc-row:not(.pc-head){font-family:var(--pc-mono);font-size:16px}
+.pc-note{font-size:14px;line-height:1.6;color:var(--muted);margin:12px 0 0}
+.pc-note b{color:var(--text)}
+.pc-cl{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--border)}
+.pc-cl .ck{width:30px;height:30px;border-radius:8px}
+.pc-cl .ck svg{width:18px;height:18px}
+.pc-cl-p{flex:1;min-height:48px;display:flex;align-items:center;font-family:var(--pc-mono);font-size:21px;font-weight:700;cursor:pointer}
+.pc-info{min-width:48px;min-height:48px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--accent);font-size:19px}
+.pc-trick-t{font-size:16px;font-weight:600;margin:4px 0}
 </style>
 </head>
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.9.2</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.10.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
     <div class="maintab" data-m="timecard" onclick="switchMain('timecard')">Time Card</div>
     <div class="maintab" data-m="blueprint" onclick="switchMain('blueprint')">Blueprint</div>
     <div class="maintab" data-m="closing" onclick="switchMain('closing')">Closing</div>
+    <div class="maintab" data-m="primes" onclick="switchMain('primes')">Primes</div>
   </div>
   <div class="spacer"></div>
   <button class="ghost small pocket-btn" onclick="scratchToggle()" title="Scratch sheet — an 8×25 pocket grid with basic math">▦</button>
@@ -830,6 +899,58 @@ body.bell-full-lock{overflow:hidden;}
     <h3><span>The week's skeleton — three per day</span><span class="muted" id="weekProgress"></span></h3>
     <div class="body"><div class="week-board" id="weekBoard"></div></div>
     <div class="hint">Sketch the week — no more than three things per day. When a day goes sideways, come back here to re-ground: these were your priorities and your idea of the time. Go from here, not from the spiral.</div>
+  </div>
+</div>
+</div>
+
+<!-- ============================= PRIMES ============================= -->
+<div class="main-pane" id="main-primes">
+<div class="pc-wrap" id="pcWrap">
+  <div class="pc-top">
+    <div class="pc-seg" role="group" aria-label="Difficulty">
+      <button type="button" data-t="easy" class="on" onclick="pcSetTier('easy')">Easy</button>
+      <button type="button" data-t="medium" onclick="pcSetTier('medium')">Medium</button>
+      <button type="button" data-t="hard" onclick="pcSetTier('hard')">Hard</button>
+    </div>
+    <span class="pc-streak hidden" id="pcStreak"></span>
+  </div>
+  <section class="pc-screen" id="pcWelcome">
+    <div class="pc-hero">
+      <div class="pc-title">Prime or Composite</div>
+      <p class="pc-sub">A number from 2 to 999. Work it out by hand, then call it. Every answer shows the method.</p>
+    </div>
+    <button type="button" class="pc-play" onclick="pcPlay()">Play</button>
+  </section>
+  <section class="pc-screen hidden" id="pcQuestion">
+    <div class="pc-qbox">
+      <div class="pc-num" id="pcNum"></div>
+      <div class="pc-prompt">Is it prime?</div>
+      <div class="pc-answers">
+        <button type="button" class="pc-ans" onclick="pcAnswer(true)">Prime</button>
+        <button type="button" class="pc-ans" onclick="pcAnswer(false)">Composite</button>
+      </div>
+    </div>
+    <div class="pc-refs">
+      <button type="button" onclick="pcOpenSheet('roots')">Roots</button>
+      <button type="button" onclick="pcOpenSheet('tricks')">Prime tricks</button>
+      <button type="button" onclick="pcOpenSheet('checklist')">Checklist</button>
+    </div>
+  </section>
+  <section class="pc-screen hidden" id="pcAnswer">
+    <div class="pc-verdict" id="pcVerdict"></div>
+    <div class="pc-truth" id="pcTruth"></div>
+    <div class="pc-explain" id="pcExplain"></div>
+    <button type="button" class="pc-play pc-next" onclick="pcNext()">Next</button>
+  </section>
+</div>
+<div class="pc-sheet-bg" id="pcSheetBg" onclick="if(event.target===this) pcCloseSheet()">
+  <div class="pc-sheet" role="dialog" aria-modal="true" aria-labelledby="pcSheetTitle">
+    <div class="pc-sheet-head">
+      <button type="button" class="pc-back hidden" id="pcSheetBack" onclick="pcOpenSheet('checklist')">← Back</button>
+      <h3 id="pcSheetTitle"></h3>
+      <button type="button" class="pc-x" id="pcSheetX" onclick="pcCloseSheet()" aria-label="Close">✕</button>
+    </div>
+    <div class="pc-sheet-body" id="pcSheetBody"></div>
   </div>
 </div>
 </div>
@@ -1231,8 +1352,11 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.9.2 — the mobile surface of
-   CTT. v0.9.1: workshop links accept a same-origin path without being mangled
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.10.0 — the mobile surface of
+   CTT. v0.10.0: Primes — a sixth tab, the prime-or-composite mental-math drill
+   (identical engine to desktop v0.11.0; ephemeral, no db) + db.blocks default
+   (lockstep with desktop v0.10.0's day map).
+   v0.9.1: workshop links accept a same-origin path without being mangled
    into https:///path (lockstep with desktop v0.9.2). Note the trap: appUrl is
    synced, and this surface lives on a different origin than the desktop one,
    so a relative path only resolves on whichever surface hosts the companion.
@@ -1336,7 +1460,7 @@ function load(){
   document.body.classList.toggle('cream', !!db.darkMode);
   document.getElementById('monthPicker').value=(db.timecard.currentDate||todayStr()).slice(0,7);
   applyAccordionState(); renderJournal(); renderTimecard();
-  switchMain('opening');   // the threshold room is the default — start on purpose
+  switchMain(location.hash==='#primes'?'primes':'opening');   // the threshold room is the default — start on purpose (#primes deep-links the drill)
   save();
   booting=false;
   syncBoot();
@@ -1348,6 +1472,7 @@ function mergeDefaults(p){
   p.timecard=Object.assign({days:{},currentDate:null}, p.timecard||{});
   p.intentions=p.intentions||{};   // Opening tab: per-date session intentions [{text,from,to,done}]
   p.closing=p.closing||{};         // Closing tab: per-date {enough:bool} — never read after its day
+  p.blocks=p.blocks||{};           // Blueprint day map (desktop v0.10.0): per-date [{id,s,e,text}], s/e = minutes after midnight — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.scratch=Object.assign({cells:{}}, p.scratch||{});   // Scratch sheet (pocket tool): raw strings keyed "A1".."H25" — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.prompts=Object.assign({open:[
     "What is this session for?",
@@ -2838,6 +2963,143 @@ function copyWeekPlan(){ const plain=[],html=[];
     plain.push(''); html.push(''); });
   if(!plain.length){ plain.push('(empty week)'); html.push('(empty week)'); }
   showCopy('Week Plan', plain.join('\n'), html.join('\n')); }
+/* ---- Primes — prime or composite, by hand ----
+   A mental-math drill: a number from 2 to 999; call it Prime or Composite, and
+   every answer teaches the method — the smallest factor's trick worked on the
+   number, or the root bound and the primes cleared. √999 ≈ 31.6, so 2…31 test
+   everything. Ephemeral by design: all state lives in memory, nothing touches
+   db or storage, a refresh starts at the welcome screen. The streak dies with
+   the sitting — practice feedback, never a come-back hook (Chad, 2026-10-30).
+   Identical in both sibling repos. */
+const PC_CONFIG={   // bucket weights in percent — tune here
+  easy:  {min:2,   weights:{obvious:20, threes:20, hard:20, primes:40}},
+  medium:{min:2,   weights:{obvious:0,  threes:25, hard:35, primes:40}},
+  hard:  {min:100, weights:{obvious:0,  threes:0,  hard:50, primes:50}},
+};
+const PC_PRIMES=[2,3,5,7,11,13,17,19,23,29,31];
+const PC_TRICKS={   // verbatim from the handoff; k/op drive the chop tricks
+  2:{trick:'Last digit is even', ex:'538 ✓'},
+  3:{trick:'Digit sum divisible by 3', ex:'471 → 12 ✓'},
+  5:{trick:'Last digit is 0 or 5', ex:'935 ✓'},
+  7:{trick:'Chop last digit, ×2, subtract', ex:'161 → 16 − 2 = 14 ✓', k:2, op:-1},
+  11:{trick:'Alternating sum (+ − + …)', ex:'506 → 5 − 0 + 6 = 11 ✓'},
+  13:{trick:'Chop, ×4, add', ex:'182 → 18 + 8 = 26 ✓', k:4, op:1},
+  17:{trick:'Chop, ×5, subtract', ex:'221 → 22 − 5 = 17 ✓', k:5, op:-1},
+  19:{trick:'Chop, ×2, add', ex:'247 → 24 + 14 = 38 ✓', k:2, op:1},
+  23:{trick:'Chop, ×7, add', ex:'299 → 29 + 63 = 92 = 4 × 23 ✓', k:7, op:1},
+  29:{trick:'Chop, ×3, add', ex:'377 → 37 + 21 = 58 = 2 × 29 ✓', k:3, op:1},
+  31:{trick:'Chop, ×3, subtract', ex:'403 → 40 − 9 = 31 ✓', k:3, op:-1},
+};
+function pcSpf(n){ for(const p of PC_PRIMES){ if(p*p>n) break; if(n%p===0) return p; } return n; }   // smallest prime factor; n itself when prime
+const pcIsPrime=n=>n>=2&&pcSpf(n)===n;
+const PC_BUCKETS={};
+(function(){ for(const t in PC_CONFIG){ const b={obvious:[],threes:[],hard:[],primes:[]};
+  for(let n=PC_CONFIG[t].min;n<=999;n++){
+    if(pcIsPrime(n)){ if(t!=='easy'&&n<=5) continue; b.primes.push(n); }   // Medium/Hard drop 2, 3, 5
+    else if(n%2===0||n%5===0) b.obvious.push(n);
+    else if(n%3===0) b.threes.push(n);
+    else b.hard.push(n); }
+  PC_BUCKETS[t]=b; } })();
+function pcDraw(tier,prev){ const w=PC_CONFIG[tier].weights, B=PC_BUCKETS[tier];
+  const keys=Object.keys(w).filter(k=>w[k]>0&&B[k].length), tot=keys.reduce((a,k)=>a+w[k],0);
+  for(;;){ let r=Math.random()*tot, key=keys[keys.length-1];
+    for(const k of keys){ if(r<w[k]){ key=k; break; } r-=w[k]; }
+    const arr=B[key], n=arr[Math.floor(Math.random()*arr.length)];
+    if(n!==prev) return {n:n,bucket:key}; } }
+const pcNeg=x=>x<0?'−'+(-x):String(x);
+function pcMult(r,p){   // "26 = 2 × 13 ✓" — 0 and negative multiples count
+  if(r%p!==0) return pcNeg(r)+' — not a multiple of '+p+' ✗';
+  if(r===0||Math.abs(r)===p) return pcNeg(r)+' ✓';
+  return pcNeg(r)+' = '+pcNeg(r/p)+' × '+p+' ✓'; }
+// Work p's trick on n. Returns {ok, lines}; ok always equals n % p === 0 (asserted in tests).
+function pcApply(p,n){
+  const T=PC_TRICKS[p], ds=String(n).split('').map(Number), last=n%10;
+  if(p===2) return {ok:last%2===0, lines:['Last digit '+last+(last%2===0?' is even ✓':' is odd ✗')]};
+  if(p===5){ const ok=last===0||last===5; return {ok:ok, lines:['Last digit '+last+(ok?' ✓':' — not 0 or 5 ✗')]}; }
+  if(p===3){ const s=ds.reduce((a,b)=>a+b,0); return {ok:s%3===0, lines:[(ds.length>1?ds.join(' + ')+' = ':'')+pcMult(s,3)]}; }
+  if(p===11){ let r=0; const parts=ds.map((d,i)=>{ r+=i%2?-d:d; return i===0?String(d):(i%2?'− ':'+ ')+d; });
+    return {ok:r%11===0, lines:[(ds.length>1?parts.join(' ')+' = ':'')+pcMult(r,11)]}; }
+  const lines=[]; let x=n;
+  for(let step=0;;step++){ const a=Math.floor(x/10), d=x%10, m=d*T.k, r=a+T.op*m;
+    const again=r>=100&&step<4;
+    lines.push((step?'again: '+x+' → ':'')+'chop → '+a+' and '+d+', '+d+' × '+T.k+' = '+m+', '+a+(T.op>0?' + ':' − ')+m+' = '+
+      (again?pcNeg(r)+' (still 100+)':pcMult(r,p)));
+    if(again){ x=r; continue; }
+    return {ok:r%p===0, lines:lines}; } }
+const pcSteps=lines=>escapeHtml(lines.map(l=>l.split(', ').join('\n')).join('\n'));   // one step per line — phones wrap long sums mid-expression
+function pcComposite(n){ const p=pcSpf(n), q=n/p, a=pcApply(p,n);
+  return '<div class="pc-eq">'+n+' = '+p+' × '+q+'</div>'+
+    '<div class="pc-math"><b>'+p+' trick</b> · '+escapeHtml(PC_TRICKS[p].trick)+'\n'+pcSteps(a.lines)+'</div>'; }
+function pcPrime(n){ const k=Math.floor(Math.sqrt(n)), chk=PC_PRIMES.filter(p=>p<=k); let h='';
+  if(n<=31) h+='<p>'+n+' is on the prime list.'+(n<=3?' Nothing to check.':'')+'</p>';
+  if(chk.length){
+    h+='<div class="pc-math">'+n+': '+k+'² = '+(k*k)+' and '+(k+1)+'² = '+((k+1)*(k+1))+', so check primes up to '+k+'.</div>';
+    h+='<p>'+(chk.length>1?'None of '+chk.join(', ')+' divide it':chk[0]+' doesn’t divide it')+', so it’s prime.</p>';
+    h+='<div class="pc-chips">'+chk.map(p=>'<button type="button" onclick="pcOpenSheet(\'trick\','+p+',\'answer\')">'+p+'</button>').join('')+'</div>';
+    h+='<div class="pc-hint">Tap a prime to watch its trick fail on '+n+'.</div>'; }
+  return h; }
+
+const pc={tier:'easy', screen:'welcome', n:null, streak:0, checked:new Set(), sheetOpen:false};
+function pcSetTier(t){ pc.tier=t;   // applies to the next number, never the one on screen
+  document.querySelectorAll('.pc-seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); }
+function pcShow(s){ pc.screen=s;
+  ['Welcome','Question','Answer'].forEach(x=>document.getElementById('pc'+x).classList.toggle('hidden',x.toLowerCase()!==s));
+  const st=document.getElementById('pcStreak'); st.classList.toggle('hidden',s==='welcome'); st.textContent='Streak '+pc.streak;
+  pcFit(); }
+function pcFit(){ const w=document.getElementById('pcWrap'); if(!w||!w.offsetParent) return;   // fill the viewport below the header so the reference row sits in the thumb zone
+  w.style.minHeight='calc(100dvh - '+Math.round(w.getBoundingClientRect().top+window.scrollY)+'px)'; }
+function pcDeal(){ pc.checked.clear(); pc.n=pcDraw(pc.tier,pc.n).n;
+  document.getElementById('pcNum').textContent=pc.n; pcShow('question'); window.scrollTo(0,0); }
+function pcPlay(){ pcDeal(); }
+function pcNext(){ pcCloseSheet(); pcDeal(); }
+function pcAnswer(saidPrime){ if(pc.screen!=='question') return;
+  pcCloseSheet();
+  const n=pc.n, prime=pcIsPrime(n), right=saidPrime===prime;
+  pc.streak=right?pc.streak+1:0;
+  const v=document.getElementById('pcVerdict');
+  v.textContent=saidPrime?(prime?'Yes! Prime.':'Not quite — it’s composite.'):(prime?'Not quite — it’s prime.':'Correct — composite.');
+  v.className='pc-verdict '+(right?'ok':'no');
+  document.getElementById('pcTruth').innerHTML='<b>'+n+'</b> is '+(prime?'prime':'composite')+'.';
+  document.getElementById('pcExplain').innerHTML=prime?pcPrime(n):pcComposite(n);
+  pcShow('answer'); window.scrollTo(0,0); }
+function renderPrimes(){ pcShow(pc.screen); }
+
+/* Reference sheets — one at a time; ✕, backdrop and Escape all close; a trick
+   opened from the Checklist gets ← Back instead of a stacked sheet. */
+function pcOpenSheet(kind,p,from){
+  const body=document.getElementById('pcSheetBody'), title=document.getElementById('pcSheetTitle');
+  document.getElementById('pcSheetBack').classList.toggle('hidden',!(kind==='trick'&&from==='checklist'));
+  body.innerHTML='';
+  if(kind==='roots'){ title.textContent='Square roots';
+    body.innerHTML='<div class="pc-rows pc-sq"><div class="pc-row pc-head"><span>Square</span><span>Value</span></div>'+
+      [10,15,20,25,30,31].map(x=>'<div class="pc-row"><span>'+x+'²</span><span>'+(x*x)+'</span></div>').join('')+'</div>'+
+      '<p class="pc-note"><b>Squares of numbers ending in 5:</b> multiply the first digit by the next number up, then stick 25 on the end. 35² → 3 × 4 = 12 → 1225.</p>'+
+      '<p class="pc-note"><b>One off a round number:</b> square the round number, add or subtract twice it, then add 1. 21² → 400 + 40 + 1 = 441. 19² → 400 − 40 + 1 = 361.</p>'; }
+  else if(kind==='tricks'){ title.textContent='Prime tricks';
+    body.innerHTML='<div class="pc-rows"><div class="pc-row pc-head"><span>Prime</span><span>Trick · example</span></div>'+
+      PC_PRIMES.map(q=>'<div class="pc-row"><span class="pc-p">'+q+'</span><span>'+escapeHtml(PC_TRICKS[q].trick)+'<span class="pc-ex">'+escapeHtml(PC_TRICKS[q].ex)+'</span></span></div>').join('')+'</div>'+
+      '<p class="pc-note">“Chop” means split off the last digit. Multiply that digit as shown, then add it to or subtract it from what’s left. If the result is a multiple of the prime (including 0), so is the original number.</p>'; }
+  else if(kind==='checklist'){ title.textContent='Checklist';
+    PC_PRIMES.forEach(q=>{ const row=document.createElement('div'); row.className='pc-cl';
+      const lbl=document.createElement('span'); lbl.className='pc-cl-p'; lbl.textContent=q;
+      const ck=makeCheck(pc.checked.has(q), lbl, d=>{ if(d) pc.checked.add(q); else pc.checked.delete(q); });
+      ck.box.setAttribute('aria-label','Cleared '+q); lbl.onclick=()=>ck.box.click();
+      const info=document.createElement('button'); info.type='button'; info.className='pc-info'; info.textContent='ⓘ';
+      info.setAttribute('aria-label',q+' trick'); info.onclick=()=>pcOpenSheet('trick',q,'checklist');
+      row.append(ck.wrap,lbl,info); body.appendChild(row); }); }
+  else if(kind==='trick'){ const T=PC_TRICKS[p], a=pcApply(p,pc.n); title.textContent=p+' trick';
+    body.innerHTML='<div class="pc-trick-t">'+escapeHtml(T.trick)+'</div>'+
+      '<p class="pc-note">Example: <span style="font-family:var(--pc-mono)">'+escapeHtml(T.ex)+'</span></p>'+
+      '<p class="pc-note" style="margin-top:14px">On '+pc.n+':</p>'+
+      '<div class="pc-math">'+pcSteps(a.lines)+'</div>'+
+      '<p>'+(a.ok?p+' divides '+pc.n+'.':p+' doesn’t divide '+pc.n+'.')+'</p>'; }
+  body.scrollTop=0;
+  document.getElementById('pcSheetBg').classList.add('show'); pc.sheetOpen=true;
+  document.getElementById('pcSheetX').focus({preventScroll:true}); }
+function pcCloseSheet(){ if(!pc.sheetOpen) return; pc.sheetOpen=false; document.getElementById('pcSheetBg').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pc.sheetOpen){ e.preventDefault(); pcCloseSheet(); } });
+window.addEventListener('resize',()=>{ if(pc.screen) pcFit(); });
+window.addEventListener('hashchange',()=>{ if(location.hash==='#primes') switchMain('primes'); });
 /* ---- Opening — the threshold room ----
    Default tab. The Thinker draws himself in (~6s, tap to pause), a prompt asks
    what the session is for, and up to three intentions with time boxes live
@@ -3030,7 +3292,8 @@ function renderClosing(){
 function switchMain(name){ document.querySelectorAll('.maintab').forEach(t=>t.classList.toggle('active',t.dataset.m===name));
   document.querySelectorAll('.main-pane').forEach(p=>p.classList.remove('active')); document.getElementById('main-'+name).classList.add('active');
   if(name==='timecard') renderTimecard(); else if(name==='blueprint') renderBlueprint();
-  else if(name==='opening') renderOpening(); else if(name==='closing') renderClosing(); else renderJournal(); }
+  else if(name==='opening') renderOpening(); else if(name==='closing') renderClosing(); else if(name==='primes') renderPrimes(); else renderJournal();
+  if(name!=='primes'&&typeof pcCloseSheet==='function') pcCloseSheet(); }
 function switchTcTab(name){ document.querySelectorAll('#main-timecard .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
   document.querySelectorAll('#main-timecard .tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById('tc-'+name).classList.add('active');
   if(name==='report') renderReport(); }

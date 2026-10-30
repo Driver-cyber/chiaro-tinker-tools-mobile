@@ -349,6 +349,51 @@
       textareas here. Markdown is the stored format on both sides, so the
       data is compatible today; this is a rendering gap, not a schema one.
 
+* **[2026-10-30] v0.10.0 — Primes, plus the day-map schema default
+  (lockstep with desktop v0.11.0 / v0.10.0).** Chad's handoff: a
+  prime-or-composite mental-math drill, landing first here at
+  chiaromobile. Also pays desktop v0.10.0's lockstep debt: `db.blocks`
+  (the Blueprint day map's per-date blocks) now defaults here too, verified
+  against a legacy-shaped db with a canary key. This surface doesn't render
+  the day map yet; it just carries the field safely.
+    * *Placement (Chad, asked and answered):* a **sixth tab**, after Closing,
+      not a pocket tool, even though "tabs are rooms, pockets are tools" was
+      the pattern. A drill you sit down to is a room. `#primes` deep-links
+      straight to it (a home-screen bookmark lands on the game).
+    * *The streak, and why it doesn't break the ethos (Chad ratified):* the
+      constitution says "no streaks… ever." The handoff asked for one. We
+      kept it, **in memory only**: it resets on a wrong answer and dies on
+      refresh or tab close. The ethos forbids *re-engagement* mechanics,
+      chains that pull you back tomorrow. A counter that can't outlive the
+      sitting is practice feedback, not a leash. The line, recorded so it
+      holds: **nothing about the game persists, so nothing about it can
+      summon.** Playing writes zero bytes to storage (verified).
+    * *Open/Close lens:* on open, one number and two buttons, first function
+      fast. On close, nothing to tidy and nothing held. Walk away mid-run and
+      the bench is exactly as you left it.
+    * *Engine:* identical in both sibling repos (byte-for-byte, asserted).
+      Weighted buckets (obvious / threes / hard composites / primes) per tier
+      in one `PC_CONFIG` object; never repeats the previous number. Every
+      answer shows the method: `n = p × q` plus p's trick worked on n (chops
+      re-applied while ≥100, one step per line so phones don't wrap
+      mid-sum), or the root bound plus tappable primes that open their trick
+      failing on n. Sheets: one at a time; ✕, backdrop, Escape; ← Back from a
+      Checklist trick, never a stacked sheet.
+    * *Deviations from the handoff, deliberate:* theme follows CTT's own
+      tokens and Cream toggle rather than `prefers-color-scheme` (the
+      handoff also says to match the site); muted red is `--danger` mixed
+      toward `--muted`; reference "tables" render as grid rows, because the
+      mobile surface keeps no `<table>`.
+    * *Verified:* 168 primes; all 11 tricks agree with real divisibility on
+      every n in 2–999 (10,978 cases) and every composite gets a ✓ worked
+      example; spot checks 221/377/403/961/997; 1,000 draws per tier within
+      ±2.4 pts of the weights, Hard never below 100 or a multiple of 2/3/5.
+      UI suites with real taps: mobile 37/37 at 390×844 (answer buttons
+      mid-screen, reference row in the bottom third, every button ≥48px, no
+      sideways scroll, refresh → welcome), desktop 35/35. A screenshot caught
+      the sheets falling back from monospace (the font variable was scoped
+      inside the column the sheets render outside of), fixed and asserted.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
