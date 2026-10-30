@@ -563,8 +563,9 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 .pc-sheet-head{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 16px;border-bottom:1px solid var(--border)}
 .pc-sheet-head h3{flex:1;margin:0;font-size:17px}
 .pc-x{min-width:48px;min-height:48px;background:transparent;border:none;color:var(--text);font-size:19px}
-.pc-back{min-height:48px;padding:0 10px 0 0;background:transparent;border:none;color:var(--accent);font-size:15px;font-weight:600}
-.pc-back.hidden{display:none}
+.pc-sheet-foot{padding:10px 16px 12px;border-top:1px solid var(--border)}
+.pc-sheet-foot.hidden{display:none}
+.pc-backbtn{width:100%;min-height:52px;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;font-size:15px;font-weight:600}
 .pc-sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 16px 20px}
 .pc-rows{font-size:14.5px}   /* grid rows, not tables — the mobile surface keeps none */
 .pc-row{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:9px 6px;border-bottom:1px solid var(--border)}
@@ -604,7 +605,7 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.11.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.11.1</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -974,14 +975,14 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
     <button type="button" class="pc-play pc-next" onclick="pcNext()">Next</button>
   </section>
 </div>
-<div class="pc-sheet-bg" id="pcSheetBg" onclick="if(event.target===this) pcCloseSheet()">
+<div class="pc-sheet-bg" id="pcSheetBg" onclick="if(event.target===this) pcDismiss()">
   <div class="pc-sheet" role="dialog" aria-modal="true" aria-labelledby="pcSheetTitle">
     <div class="pc-sheet-head">
-      <button type="button" class="pc-back hidden" id="pcSheetBack" onclick="pcOpenSheet('checklist')">← Back</button>
       <h3 id="pcSheetTitle"></h3>
-      <button type="button" class="pc-x" id="pcSheetX" onclick="pcCloseSheet()" aria-label="Close">✕</button>
+      <button type="button" class="pc-x" id="pcSheetX" onclick="pcDismiss()" aria-label="Close">✕</button>
     </div>
     <div class="pc-sheet-body" id="pcSheetBody"></div>
+    <div class="pc-sheet-foot hidden" id="pcSheetFoot"><button type="button" class="pc-backbtn" onclick="pcOpenSheet('checklist')">← Back to checklist</button></div>
   </div>
 </div>
 </div>
@@ -1383,8 +1384,10 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.11.0 — the mobile surface of
-   CTT. v0.11.0: Primes moves from a tab to a pocket tool (÷ in the appbar, full
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.11.1 — the mobile surface of
+   CTT. v0.11.1: a trick opened from the Checklist closes back to it (✕, backdrop,
+   Escape), with ← Back to checklist pinned at the bottom of the sheet.
+   v0.11.0: Primes moves from a tab to a pocket tool (÷ in the appbar, full
    screen, ✕/Esc) and gains the found-primes meter: db.primes.solved records
    each prime the first time it's called right (lockstep with desktop v0.12.0).
    v0.10.2: Primes trick sheets hide the work mid-question behind "Check my
@@ -3118,11 +3121,13 @@ function pcAnswer(saidPrime){ if(pc.screen!=='question') return;
   document.getElementById('pcExplain').innerHTML=prime?pcPrime(n):pcComposite(n);
   pcShow('answer'); }
 
-/* Reference sheets — one at a time; ✕, backdrop and Escape all close; a trick
-   opened from the Checklist gets ← Back instead of a stacked sheet. */
+/* Reference sheets — one at a time; ✕, backdrop and Escape all close. A trick
+   opened from the Checklist closes back to the Checklist (never a stacked
+   sheet), with a ← Back to checklist button pinned at the bottom. */
 function pcOpenSheet(kind,p,from){
   const body=document.getElementById('pcSheetBody'), title=document.getElementById('pcSheetTitle');
-  document.getElementById('pcSheetBack').classList.toggle('hidden',!(kind==='trick'&&from==='checklist'));
+  pc.sheetBack=kind==='trick'&&from==='checklist';   // a trick opened from the Checklist closes back to it
+  document.getElementById('pcSheetFoot').classList.toggle('hidden',!pc.sheetBack);
   body.innerHTML='';
   if(kind==='roots'){ title.textContent='Square roots';
     body.innerHTML='<div class="pc-rows pc-sq"><div class="pc-row pc-head"><span>Square</span><span>Value</span></div>'+
@@ -3164,12 +3169,13 @@ function pcOpenSheet(kind,p,from){
   if(pcKbd) document.getElementById('pcSheetX').focus({preventScroll:true}); }   // keyboard users land on ✕; taps and clicks don't (iOS paints focus as a filled button)
 function pcReveal(btn){ const w=btn.nextElementSibling, open=w.classList.toggle('hidden')===false;
   btn.setAttribute('aria-expanded',open?'true':'false'); btn.textContent=open?'Hide the work':'Check my work on '+pc.n; }
+function pcDismiss(){ if(pc.sheetBack) pcOpenSheet('checklist'); else pcCloseSheet(); }   // ✕, backdrop, Escape
 function pcCloseSheet(){ if(!pc.sheetOpen) return; pc.sheetOpen=false; document.getElementById('pcSheetBg').classList.remove('show'); }
 let pcKbd=false;   // was the last input a key? then a sheet opened by it should move focus
 document.addEventListener('keydown',()=>{ pcKbd=true; },true);
 document.addEventListener('pointerdown',()=>{ pcKbd=false; },true);
 document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return;   // a sheet first, then the pocket
-  if(pc.sheetOpen){ e.preventDefault(); pcCloseSheet(); }
+  if(pc.sheetOpen){ e.preventDefault(); pcDismiss(); }
   else if(document.getElementById('pcPocket').classList.contains('open')&&!document.querySelector('.modal-bg.open')){ e.preventDefault(); pcClosePocket(); } });
 window.addEventListener('hashchange',()=>{ if(location.hash==='#primes') pcOpenPocket(); });
 /* ---- Opening — the threshold room ----
