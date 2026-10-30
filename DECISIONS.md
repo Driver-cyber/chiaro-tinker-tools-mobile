@@ -449,6 +449,26 @@
   Measured: number fully above the sheet at 360×740, 375×667, 390×844,
   430×932, 844×390, 1280×720 and 1440×900.
 
+* **[2026-10-30] v0.12.0 — the pocket FAB: tools in the thumb zone (Chad).**
+  *Mobile-only divergence; desktop keeps ▦/÷ in the appbar.* The pocket
+  tools left the crowded appbar for one round **✦** button pinned
+  bottom-right (above the home-bar safe area). Tap it and Scratch and Primes
+  fan out in an arc (100°→170°, up and to the left of the thumb) with labels;
+  the button turns to ✕. Tapping a tool, ✕, the scrim, or Escape folds it.
+    * *Extensible by construction:* a new pocket tool is one more `.fab-item`
+      plus a case in `fabPick`; the arc spaces itself for any count.
+    * *Never in the way:* layer 60 (under the pockets at 70/80 and modals at
+      99), so an open tool always covers it; pages get bottom padding so the
+      button never sits on the last item; it **tucks away while a text field
+      is focused**, so it can't float over an input above the iOS keyboard.
+    * *Why it suits the PWA:* in standalone mode this is the iPhone-native
+      shape, a primary action under the thumb, not a toolbar glyph at the top
+      of a tall screen.
+    * *Verified* at 390×844 with real touch events: 16/16 FAB checks
+      (position, arc geometry, 48px+ targets, labels on screen, both tools
+      open, all three ways to fold, the pocket covering it, hide-while-typing),
+      plus the Primes suite 63/63 through the FAB.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
