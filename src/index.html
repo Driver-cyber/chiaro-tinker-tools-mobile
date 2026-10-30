@@ -506,8 +506,15 @@ body.bell-full-lock{overflow:hidden;}
   table.scratch td input{font-size:16px;width:112px;}
 }
 /* Primes — prime-or-composite mental math. Ephemeral: no db, no storage. */
-#main-primes{--pc-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}   /* on the pane, so the sheets (outside .pc-wrap) get it too */
-.pc-wrap{max-width:460px;margin:0 auto;box-sizing:border-box;
+/* The pocket: full-screen over any room (layer 80 — above the scratch sheet's 70, below modals' 99). */
+.pc-pocket{--pc-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;position:fixed;inset:0;z-index:80;display:none;flex-direction:column;
+  background:var(--bg);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pc-pocket.open{display:flex}
+html.pc-locked,html.pc-locked body{overflow:hidden}
+.pc-pocket-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(2px + env(safe-area-inset-top)) 4px 2px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+.pc-pocket-name{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.pc-wrap{flex:1 0 auto;width:100%;max-width:460px;margin:0 auto;box-sizing:border-box;
   padding:10px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
 .pc-top{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px}   /* toggle centered; streak on its own line beneath */
 .pc-seg{display:flex;width:100%;max-width:340px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -546,7 +553,7 @@ body.bell-full-lock{overflow:hidden;}
 .pc-chips button:active,.pc-refs button:active{background:rgba(242,162,74,.14)}
 .pc-hint{font-size:13px;color:var(--muted)}
 .pc-next{margin-top:18px}
-.pc-sheet-bg{position:fixed;inset:0;z-index:950;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+.pc-sheet-bg{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
 .pc-sheet-bg.show{display:flex}
 .pc-sheet{width:100%;max-width:520px;max-height:84dvh;display:flex;flex-direction:column;box-sizing:border-box;
   background:var(--bg);border:1px solid var(--border);border-bottom:none;border-radius:18px 18px 0 0;
@@ -574,28 +581,40 @@ body.bell-full-lock{overflow:hidden;}
 .pc-cl-p{flex:1;min-height:48px;display:flex;align-items:center;font-family:var(--pc-mono);font-size:21px;font-weight:700;cursor:pointer}
 .pc-info{min-width:48px;min-height:48px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--accent);font-size:19px}
 .pc-trick-t{font-size:16px;font-weight:600;margin:4px 0}
+.pc-found{display:block;width:100%;max-width:320px;min-height:48px;margin:28px auto 0;padding:10px 14px;box-sizing:border-box;
+  background:transparent;color:var(--text);border:1px solid var(--border);border-radius:12px;text-align:left}
+.pc-found-txt{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--muted)}
+.pc-found-see{color:var(--accent);white-space:nowrap}
+.pc-bar{display:block;height:6px;margin-top:9px;border-radius:3px;background:rgba(156,138,110,.18);overflow:hidden}
+.pc-bar span{display:block;height:100%;width:0;border-radius:3px;background:var(--accent);transition:width .5s ease-out}
+.pc-new{margin-top:4px;font-size:14px;color:var(--accent)}
+.pc-hund{display:flex;justify-content:space-between;margin:14px 0 6px;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:5px}
+.pc-cell{height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-family:var(--pc-mono);font-size:13.5px;
+  border:1px solid transparent;background:rgba(156,138,110,.08);color:rgba(156,138,110,.4)}   /* unfound: a soft tile in the dark */
+.pc-cell.lit{border:1px solid var(--accent);background:rgba(242,162,74,.10);color:var(--accent);font-weight:700}
 .pc-reveal{width:100%;min-height:52px;margin:6px 0 4px;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;font-size:15px;font-weight:600}
 .pc-work{margin-top:6px}
-#main-primes button:not(.pc-play):hover{background:rgba(242,162,74,.10)}   /* the global button:hover paints accent2 — and iOS leaves hover stuck on the last tap */
-#main-primes .pc-seg button.on:hover{background:rgba(242,162,74,.14)}
-#main-primes .pc-ans:hover{background:var(--panel)}
-#main-primes .pc-ans:active{background:rgba(242,162,74,.20)}
+.pc-pocket button:not(.pc-play):hover{background:rgba(242,162,74,.10)}   /* the global button:hover paints accent2 — and iOS leaves hover stuck on the last tap */
+.pc-pocket .pc-seg button.on:hover{background:rgba(242,162,74,.14)}
+.pc-pocket .pc-ans:hover{background:var(--panel)}
+.pc-pocket .pc-ans:active{background:rgba(242,162,74,.20)}
 </style>
 </head>
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.10.2</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.11.0</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
     <div class="maintab" data-m="timecard" onclick="switchMain('timecard')">Time Card</div>
     <div class="maintab" data-m="blueprint" onclick="switchMain('blueprint')">Blueprint</div>
     <div class="maintab" data-m="closing" onclick="switchMain('closing')">Closing</div>
-    <div class="maintab" data-m="primes" onclick="switchMain('primes')">Primes</div>
   </div>
   <div class="spacer"></div>
   <button class="ghost small pocket-btn" onclick="scratchToggle()" title="Scratch sheet — an 8×25 pocket grid with basic math">▦</button>
+  <button class="ghost small pocket-btn" onclick="pcOpenPocket()" title="Primes — prime or composite, by hand (Esc puts it back)" aria-label="Primes">÷</button>
   <div class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveStatus">Saved</span></div>
   <div class="sync-pill" id="syncPill" onclick="openSettings()" title="Storage & cloud sync settings"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Local only</span></div>
   <div class="gear-wrap">
@@ -910,8 +929,9 @@ body.bell-full-lock{overflow:hidden;}
 </div>
 </div>
 
-<!-- ============================= PRIMES ============================= -->
-<div class="main-pane" id="main-primes">
+<!-- ======================= PRIMES (pocket tool) ======================= -->
+<div class="pc-pocket" id="pcPocket" role="dialog" aria-modal="true" aria-label="Prime or Composite">
+<div class="pc-pocket-head"><span class="pc-pocket-name">÷ Primes</span><button type="button" class="pc-x" id="pcPocketX" onclick="pcClosePocket()" aria-label="Close Primes">✕</button></div>
 <div class="pc-wrap" id="pcWrap">
   <div class="pc-top">
     <div class="pc-seg" role="group" aria-label="Difficulty">
@@ -925,6 +945,10 @@ body.bell-full-lock{overflow:hidden;}
     <div class="pc-hero">
       <div class="pc-title">Prime or Composite</div>
       <p class="pc-sub">A number from 2 to 999. Work it out by hand, then call it. Every answer shows the method.</p>
+      <button type="button" class="pc-found" onclick="pcOpenSheet('found')">
+        <span class="pc-found-txt"><span id="pcFoundTxt">0 of 168 primes found</span><span class="pc-found-see">See them ›</span></span>
+        <span class="pc-bar"><span id="pcFoundBar"></span></span>
+      </button>
     </div>
     <button type="button" class="pc-play" onclick="pcPlay()">Play</button>
   </section>
@@ -1359,8 +1383,11 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.10.2 — the mobile surface of
-   CTT. v0.10.2: Primes trick sheets hide the work mid-question behind "Check my
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.11.0 — the mobile surface of
+   CTT. v0.11.0: Primes moves from a tab to a pocket tool (÷ in the appbar, full
+   screen, ✕/Esc) and gains the found-primes meter: db.primes.solved records
+   each prime the first time it's called right (lockstep with desktop v0.12.0).
+   v0.10.2: Primes trick sheets hide the work mid-question behind "Check my
    work" (try it by hand first); game buttons get their own hover tint.
    v0.10.1: Primes difficulty toggle centered (streak moves beneath it).
    v0.10.0: Primes — a sixth tab, the prime-or-composite mental-math drill
@@ -1470,7 +1497,8 @@ function load(){
   document.body.classList.toggle('cream', !!db.darkMode);
   document.getElementById('monthPicker').value=(db.timecard.currentDate||todayStr()).slice(0,7);
   applyAccordionState(); renderJournal(); renderTimecard();
-  switchMain(location.hash==='#primes'?'primes':'opening');   // the threshold room is the default — start on purpose (#primes deep-links the drill)
+  switchMain('opening');   // the threshold room is the default — start on purpose
+  if(location.hash==='#primes') pcOpenPocket();   // #primes deep-links the drill (a pocket over the Opening)
   save();
   booting=false;
   syncBoot();
@@ -1483,6 +1511,7 @@ function mergeDefaults(p){
   p.intentions=p.intentions||{};   // Opening tab: per-date session intentions [{text,from,to,done}]
   p.closing=p.closing||{};         // Closing tab: per-date {enough:bool} — never read after its day
   p.blocks=p.blocks||{};           // Blueprint day map (desktop v0.10.0): per-date [{id,s,e,text}], s/e = minutes after midnight — SCHEMA LOCKSTEP: this default exists in both sibling repos
+  p.primes=Object.assign({solved:{}}, p.primes||{});   // Primes pocket: {n:'YYYY-MM-DD'} the first day each prime was called right — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.scratch=Object.assign({cells:{}}, p.scratch||{});   // Scratch sheet (pocket tool): raw strings keyed "A1".."H25" — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.prompts=Object.assign({open:[
     "What is this session for?",
@@ -2978,8 +3007,11 @@ function copyWeekPlan(){ const plain=[],html=[];
    every answer teaches the method — the smallest factor's trick worked on the
    number, or the root bound and the primes cleared. √999 ≈ 31.6, so 2…31 test
    everything. Ephemeral by design: all state lives in memory, nothing touches
-   db or storage, a refresh starts at the welcome screen. The streak dies with
-   the sitting — practice feedback, never a come-back hook (Chad, 2026-10-30).
+   storage except one thing: db.primes.solved, the primes you've called right
+   (first-found date), so the 168-of-168 meter survives and syncs. A pocket
+   tool: full screen over any room, ✕/Esc puts it back with the question
+   intact; a refresh starts at the welcome screen. The streak dies with the
+   sitting — practice feedback, never a come-back hook (Chad, 2026-10-30).
    Identical in both sibling repos. */
 const PC_CONFIG={   // bucket weights in percent — tune here
   easy:  {min:2,   weights:{obvious:20, threes:20, hard:20, primes:40}},
@@ -3055,24 +3087,36 @@ function pcSetTier(t){ pc.tier=t;   // applies to the next number, never the one
 function pcShow(s){ pc.screen=s;
   ['Welcome','Question','Answer'].forEach(x=>document.getElementById('pc'+x).classList.toggle('hidden',x.toLowerCase()!==s));
   const st=document.getElementById('pcStreak'); st.classList.toggle('hidden',s==='welcome'); st.textContent='Streak '+pc.streak;
-  pcFit(); }
-function pcFit(){ const w=document.getElementById('pcWrap'); if(!w||!w.offsetParent) return;   // fill the viewport below the header so the reference row sits in the thumb zone
-  w.style.minHeight='calc(100dvh - '+Math.round(w.getBoundingClientRect().top+window.scrollY)+'px)'; }
+  if(s==='welcome') pcFoundMeter();
+  document.getElementById('pcPocket').scrollTop=0; }
+const PC_ALL=[]; for(let n=2;n<=999;n++) if(pcIsPrime(n)) PC_ALL.push(n);   // the 168
+function pcSolved(){ return (db.primes&&db.primes.solved)||{}; }
+function pcFoundCount(){ const s=pcSolved(); return PC_ALL.filter(n=>s[n]).length; }
+function pcFoundMeter(){ const k=pcFoundCount();
+  document.getElementById('pcFoundTxt').textContent=k+' of '+PC_ALL.length+' primes found';
+  document.getElementById('pcFoundBar').style.width=(100*k/PC_ALL.length)+'%'; }
+function pcOpenPocket(){ const o=document.getElementById('pcPocket'); if(o.classList.contains('open')) return;
+  o.classList.add('open'); document.documentElement.classList.add('pc-locked'); pcShow(pc.screen);
+  if(pcKbd) document.getElementById('pcPocketX').focus({preventScroll:true}); }
+function pcClosePocket(){ pcCloseSheet(); document.getElementById('pcPocket').classList.remove('open'); document.documentElement.classList.remove('pc-locked');
+  if(location.hash==='#primes') history.replaceState(null,'',location.pathname+location.search); }   // so the link can open it again
 function pcDeal(){ pc.checked.clear(); pc.n=pcDraw(pc.tier,pc.n).n;
-  document.getElementById('pcNum').textContent=pc.n; pcShow('question'); window.scrollTo(0,0); }
+  document.getElementById('pcNum').textContent=pc.n; pcShow('question'); }
 function pcPlay(){ pcDeal(); }
 function pcNext(){ pcCloseSheet(); pcDeal(); }
 function pcAnswer(saidPrime){ if(pc.screen!=='question') return;
   pcCloseSheet();
   const n=pc.n, prime=pcIsPrime(n), right=saidPrime===prime;
   pc.streak=right?pc.streak+1:0;
+  let fresh=false;   // the meter's one write: a prime called right for the first time
+  if(prime&&right&&!pcSolved()[n]){ db.primes.solved[n]=todayStr(); save(); fresh=true; }
   const v=document.getElementById('pcVerdict');
   v.textContent=saidPrime?(prime?'Yes! Prime.':'Not quite — it’s composite.'):(prime?'Not quite — it’s prime.':'Correct — composite.');
   v.className='pc-verdict '+(right?'ok':'no');
-  document.getElementById('pcTruth').innerHTML='<b>'+n+'</b> is '+(prime?'prime':'composite')+'.';
+  document.getElementById('pcTruth').innerHTML='<b>'+n+'</b> is '+(prime?'prime':'composite')+'.'+
+    (fresh?'<div class="pc-new">New prime found · '+pcFoundCount()+' of '+PC_ALL.length+'</div>':'');
   document.getElementById('pcExplain').innerHTML=prime?pcPrime(n):pcComposite(n);
-  pcShow('answer'); window.scrollTo(0,0); }
-function renderPrimes(){ pcShow(pc.screen); }
+  pcShow('answer'); }
 
 /* Reference sheets — one at a time; ✕, backdrop and Escape all close; a trick
    opened from the Checklist gets ← Back instead of a stacked sheet. */
@@ -3097,6 +3141,13 @@ function pcOpenSheet(kind,p,from){
       const info=document.createElement('button'); info.type='button'; info.className='pc-info'; info.textContent='ⓘ';
       info.setAttribute('aria-label',q+' trick'); info.onclick=()=>pcOpenSheet('trick',q,'checklist');
       row.append(ck.wrap,lbl,info); body.appendChild(row); }); }
+  else if(kind==='found'){ const s=pcSolved(), k=pcFoundCount(); title.textContent='Primes found · '+k+' of '+PC_ALL.length;
+    // Unfound primes stay dark (a dot, not the number) — they're lit by calling them, not by reading a list.
+    let h='<p class="pc-note" style="margin-top:2px">Each one lights the first time you call it prime. '+(PC_ALL.length-k?(PC_ALL.length-k)+' still in the dark.':'Every prime under 1,000, identified by hand.')+'</p>';
+    for(let c=0;c<10;c++){ const ps=PC_ALL.filter(n=>Math.floor(n/100)===c), lit=ps.filter(n=>s[n]).length;
+      h+='<div class="pc-hund"><span>'+(c?c*100:1)+'–'+(c*100+99)+'</span><span>'+lit+' of '+ps.length+'</span></div><div class="pc-grid">'+
+        ps.map(n=>s[n]?'<span class="pc-cell lit" title="Found '+s[n]+'">'+n+'</span>':'<span class="pc-cell" aria-label="not yet found">·</span>').join('')+'</div>'; }
+    body.innerHTML=h; }
   else if(kind==='trick'){ const T=PC_TRICKS[p], a=pcApply(p,pc.n), hide=from==='checklist'; title.textContent=p+' trick';
     // Mid-question (from the Checklist) the work on this number stays hidden — try it by hand, then check.
     // From the answer screen it's shown: the answer is already out, and watching the trick fail is the point.
@@ -3117,9 +3168,10 @@ function pcCloseSheet(){ if(!pc.sheetOpen) return; pc.sheetOpen=false; document.
 let pcKbd=false;   // was the last input a key? then a sheet opened by it should move focus
 document.addEventListener('keydown',()=>{ pcKbd=true; },true);
 document.addEventListener('pointerdown',()=>{ pcKbd=false; },true);
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pc.sheetOpen){ e.preventDefault(); pcCloseSheet(); } });
-window.addEventListener('resize',()=>{ if(pc.screen) pcFit(); });
-window.addEventListener('hashchange',()=>{ if(location.hash==='#primes') switchMain('primes'); });
+document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return;   // a sheet first, then the pocket
+  if(pc.sheetOpen){ e.preventDefault(); pcCloseSheet(); }
+  else if(document.getElementById('pcPocket').classList.contains('open')&&!document.querySelector('.modal-bg.open')){ e.preventDefault(); pcClosePocket(); } });
+window.addEventListener('hashchange',()=>{ if(location.hash==='#primes') pcOpenPocket(); });
 /* ---- Opening — the threshold room ----
    Default tab. The Thinker draws himself in (~6s, tap to pause), a prompt asks
    what the session is for, and up to three intentions with time boxes live
@@ -3312,8 +3364,7 @@ function renderClosing(){
 function switchMain(name){ document.querySelectorAll('.maintab').forEach(t=>t.classList.toggle('active',t.dataset.m===name));
   document.querySelectorAll('.main-pane').forEach(p=>p.classList.remove('active')); document.getElementById('main-'+name).classList.add('active');
   if(name==='timecard') renderTimecard(); else if(name==='blueprint') renderBlueprint();
-  else if(name==='opening') renderOpening(); else if(name==='closing') renderClosing(); else if(name==='primes') renderPrimes(); else renderJournal();
-  if(name!=='primes'&&typeof pcCloseSheet==='function') pcCloseSheet(); }
+  else if(name==='opening') renderOpening(); else if(name==='closing') renderClosing(); else renderJournal(); }
 function switchTcTab(name){ document.querySelectorAll('#main-timecard .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
   document.querySelectorAll('#main-timecard .tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById('tc-'+name).classList.add('active');
   if(name==='report') renderReport(); }
