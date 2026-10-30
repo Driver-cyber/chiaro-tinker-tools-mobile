@@ -440,6 +440,15 @@
   Checklist itself, ✕ closes all the way. Answer-screen tricks have no
   checklist behind them, so their ✕ still closes completely.
 
+* **[2026-10-30] Primes sheets take the bottom half (Chad; desktop v0.12.2 /
+  mobile v0.11.2).** Roots, Prime tricks, Checklist and every trick sheet
+  are capped at 50dvh and scroll inside, so the number being worked on
+  stays visible while you use them. The backdrop dim dropped from .55 to .3,
+  so that number reads clearly instead of fading. Short, sideways screens
+  (≤500px tall) get a 60px number so it still clears a half-height sheet.
+  Measured: number fully above the sheet at 360×740, 375×667, 390×844,
+  430×932, 844×390, 1280×720 and 1440×900.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
