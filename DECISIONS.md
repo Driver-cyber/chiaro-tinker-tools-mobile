@@ -394,6 +394,15 @@
       the sheets falling back from monospace (the font variable was scoped
       inside the column the sheets render outside of), fixed and asserted.
 
+* **[2026-10-30] Primes: try it first, then check (Chad's dogfood note).**
+  A trick opened from the Checklist mid-question now shows only the trick
+  and its generic example, plus **Check my work on n** (toggles to "Hide the
+  work"; starts hidden on every open). From the answer screen the work stays
+  visible, because the answer is already out. Also: the ✕ takes focus only
+  when a sheet was opened from the keyboard (iOS painted the touch-focused ✕
+  as a filled orange square), and game buttons get their own hover tint
+  instead of the global accent fill that iOS leaves stuck on the last tap.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
