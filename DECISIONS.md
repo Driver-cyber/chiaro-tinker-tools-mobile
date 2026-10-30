@@ -469,6 +469,16 @@
       open, all three ways to fold, the pocket covering it, hide-while-typing),
       plus the Primes suite 63/63 through the FAB.
 
+* **[2026-10-30] Primes: room to breathe (Chad).** The number sat right on the
+  top edge of a half-height sheet (11–20px). The question block now has extra
+  space below it (`clamp(24px, 11vh, 96px)`), which lifts the number about
+  30–40px. Measured: ~50px of air between number and sheet on every portrait
+  phone and desktop, answer buttons still mid-screen, sideways phones keep
+  their compact layout. *Test scar:* a CDP navigation that only changes the
+  `#hash` can reuse the in-memory document, so a "fresh" measurement ran on
+  the pre-edit page. Navigate via about:blank (or drop the hash) before
+  measuring.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
