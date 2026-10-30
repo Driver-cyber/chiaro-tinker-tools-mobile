@@ -403,6 +403,34 @@
   as a filled orange square), and game buttons get their own hover tint
   instead of the global accent fill that iOS leaves stuck on the last tap.
 
+* **[2026-10-30] Primes becomes a pocket tool, and learns which primes you've
+  found (Chad; desktop v0.12.0 / mobile v0.11.0).** *Revises two lines of the
+  entry above:* it is no longer a sixth tab, and the game no longer writes
+  nothing.
+    * *Pocket, not room (Chad changed his mind, and the house pattern
+      agrees):* **÷** in the appbar beside ▦ summons it **full screen** over
+      any room, with a 48px ✕ in the top-right. Escape closes an open sheet
+      first, then the pocket (and yields to app modals). Layer 80: above the
+      scratch sheet (70), below modals (99); its own sheets sit at 90. The
+      question survives closing; a refresh still starts at the welcome
+      screen. `#primes` now opens the pocket over the Opening, and closing it
+      clears the hash so the link works again. Five tabs again.
+    * *The meter, and the one thing it remembers:* `db.primes.solved =
+      {n: 'YYYY-MM-DD'}`, the first day each prime was **called Prime
+      correctly**, on any tier. Composites, misses and repeats write nothing;
+      a later miss never un-finds a prime. It lives in the synced db (not
+      device storage) so iOS eviction can't erase it and it follows Chad to
+      desktop. **SCHEMA LOCKSTEP:** the default landed in both repos the same
+      hour, verified against a legacy-shaped db with a canary key.
+    * *Why a 168-of-168 meter is inside the ethos:* it's **finite and
+      completable**, a mirror of mastery like Gertie's car painting itself in,
+      not a scoreboard of diligence. No reminders, no "come back," no
+      decay. The found sheet keeps unfound primes **dark** (a tile, not the
+      number), so it can never spoil a question. You light them by calling
+      them.
+    * *Verified:* mobile 59/59 and desktop 57/57 with real taps; acceptance
+      20/20; engine still byte-identical across repos.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
