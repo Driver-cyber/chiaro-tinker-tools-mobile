@@ -553,11 +553,14 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 .pc-chips button:active,.pc-refs button:active{background:rgba(242,162,74,.14)}
 .pc-hint{font-size:13px;color:var(--muted)}
 .pc-next{margin-top:18px}
-.pc-sheet-bg{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+.pc-sheet-bg{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.3)}   /* a light dim: the number above is meant to be read while the sheet is open */
 .pc-sheet-bg.show{display:flex}
-.pc-sheet{width:100%;max-width:520px;max-height:84dvh;display:flex;flex-direction:column;box-sizing:border-box;
+.pc-sheet{width:100%;max-width:520px;max-height:50vh;max-height:50dvh;display:flex;flex-direction:column;box-sizing:border-box;
   background:var(--bg);border:1px solid var(--border);border-bottom:none;border-radius:18px 18px 0 0;
   padding-bottom:env(safe-area-inset-bottom);animation:pcUp .18s ease-out}
+/* sheets take the bottom half at most: the number on screen is never covered */
+@media (max-height:500px){   /* phone on its side: a smaller number keeps it above a half-height sheet */
+  .pc-num{font-size:60px} .pc-qbox{padding:2px 0} .pc-prompt{margin:4px 0 12px} .pc-top{margin-bottom:2px} }
 @keyframes pcUp{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){ .pc-sheet{animation:none} }
 .pc-sheet-head{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 16px;border-bottom:1px solid var(--border)}
@@ -605,7 +608,7 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.11.1</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.11.2</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1384,8 +1387,10 @@ html.pc-locked,html.pc-locked body{overflow:hidden}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.11.1 — the mobile surface of
-   CTT. v0.11.1: a trick opened from the Checklist closes back to it (✕, backdrop,
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.11.2 — the mobile surface of
+   CTT. v0.11.2: Primes sheets take the bottom half at most, so the number stays in
+   view (smaller number on short, sideways screens).
+   v0.11.1: a trick opened from the Checklist closes back to it (✕, backdrop,
    Escape), with ← Back to checklist pinned at the bottom of the sheet.
    v0.11.0: Primes moves from a tab to a pocket tool (÷ in the appbar, full
    screen, ✕/Esc) and gains the found-primes meter: db.primes.solved records
