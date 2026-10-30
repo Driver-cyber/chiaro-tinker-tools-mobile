@@ -574,12 +574,18 @@ body.bell-full-lock{overflow:hidden;}
 .pc-cl-p{flex:1;min-height:48px;display:flex;align-items:center;font-family:var(--pc-mono);font-size:21px;font-weight:700;cursor:pointer}
 .pc-info{min-width:48px;min-height:48px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--accent);font-size:19px}
 .pc-trick-t{font-size:16px;font-weight:600;margin:4px 0}
+.pc-reveal{width:100%;min-height:52px;margin:6px 0 4px;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;font-size:15px;font-weight:600}
+.pc-work{margin-top:6px}
+#main-primes button:not(.pc-play):hover{background:rgba(242,162,74,.10)}   /* the global button:hover paints accent2 — and iOS leaves hover stuck on the last tap */
+#main-primes .pc-seg button.on:hover{background:rgba(242,162,74,.14)}
+#main-primes .pc-ans:hover{background:var(--panel)}
+#main-primes .pc-ans:active{background:rgba(242,162,74,.20)}
 </style>
 </head>
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.10.1</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.10.2</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1353,8 +1359,10 @@ body.bell-full-lock{overflow:hidden;}
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.10.1 — the mobile surface of
-   CTT. v0.10.1: Primes difficulty toggle centered (streak moves beneath it).
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.10.2 — the mobile surface of
+   CTT. v0.10.2: Primes trick sheets hide the work mid-question behind "Check my
+   work" (try it by hand first); game buttons get their own hover tint.
+   v0.10.1: Primes difficulty toggle centered (streak moves beneath it).
    v0.10.0: Primes — a sixth tab, the prime-or-composite mental-math drill
    (identical engine to desktop v0.11.0; ephemeral, no db) + db.blocks default
    (lockstep with desktop v0.10.0's day map).
@@ -3089,16 +3097,26 @@ function pcOpenSheet(kind,p,from){
       const info=document.createElement('button'); info.type='button'; info.className='pc-info'; info.textContent='ⓘ';
       info.setAttribute('aria-label',q+' trick'); info.onclick=()=>pcOpenSheet('trick',q,'checklist');
       row.append(ck.wrap,lbl,info); body.appendChild(row); }); }
-  else if(kind==='trick'){ const T=PC_TRICKS[p], a=pcApply(p,pc.n); title.textContent=p+' trick';
+  else if(kind==='trick'){ const T=PC_TRICKS[p], a=pcApply(p,pc.n), hide=from==='checklist'; title.textContent=p+' trick';
+    // Mid-question (from the Checklist) the work on this number stays hidden — try it by hand, then check.
+    // From the answer screen it's shown: the answer is already out, and watching the trick fail is the point.
     body.innerHTML='<div class="pc-trick-t">'+escapeHtml(T.trick)+'</div>'+
       '<p class="pc-note">Example: <span style="font-family:var(--pc-mono)">'+escapeHtml(T.ex)+'</span></p>'+
-      '<p class="pc-note" style="margin-top:14px">On '+pc.n+':</p>'+
-      '<div class="pc-math">'+pcSteps(a.lines)+'</div>'+
-      '<p>'+(a.ok?p+' divides '+pc.n+'.':p+' doesn’t divide '+pc.n+'.')+'</p>'; }
+      (hide?'<p class="pc-note" style="margin-top:14px">Try it on '+pc.n+' first.</p>'+
+            '<button type="button" class="pc-reveal" aria-expanded="false" onclick="pcReveal(this)">Check my work on '+pc.n+'</button>':'')+
+      '<div class="pc-work'+(hide?' hidden':'')+'">'+
+        (hide?'':'<p class="pc-note" style="margin-top:14px">On '+pc.n+':</p>')+
+        '<div class="pc-math">'+pcSteps(a.lines)+'</div>'+
+        '<p>'+(a.ok?p+' divides '+pc.n+'.':p+' doesn’t divide '+pc.n+'.')+'</p></div>'; }
   body.scrollTop=0;
   document.getElementById('pcSheetBg').classList.add('show'); pc.sheetOpen=true;
-  document.getElementById('pcSheetX').focus({preventScroll:true}); }
+  if(pcKbd) document.getElementById('pcSheetX').focus({preventScroll:true}); }   // keyboard users land on ✕; taps and clicks don't (iOS paints focus as a filled button)
+function pcReveal(btn){ const w=btn.nextElementSibling, open=w.classList.toggle('hidden')===false;
+  btn.setAttribute('aria-expanded',open?'true':'false'); btn.textContent=open?'Hide the work':'Check my work on '+pc.n; }
 function pcCloseSheet(){ if(!pc.sheetOpen) return; pc.sheetOpen=false; document.getElementById('pcSheetBg').classList.remove('show'); }
+let pcKbd=false;   // was the last input a key? then a sheet opened by it should move focus
+document.addEventListener('keydown',()=>{ pcKbd=true; },true);
+document.addEventListener('pointerdown',()=>{ pcKbd=false; },true);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pc.sheetOpen){ e.preventDefault(); pcCloseSheet(); } });
 window.addEventListener('resize',()=>{ if(pc.screen) pcFit(); });
 window.addEventListener('hashchange',()=>{ if(location.hash==='#primes') switchMain('primes'); });
