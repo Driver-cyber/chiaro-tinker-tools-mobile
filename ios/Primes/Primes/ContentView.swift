@@ -38,7 +38,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.top, 22)
             .padding(.bottom, 28)
             .frame(maxWidth: 520)
         }
@@ -89,6 +89,7 @@ struct WelcomeView: View {
     @ObservedObject var game: Game
     @Binding var sheet: SheetRoute?
     @Binding var style: String
+    @State private var guide = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -104,6 +105,12 @@ struct WelcomeView: View {
                 .lineSpacing(3)
                 .frame(maxWidth: 300)
                 .padding(.top, 12)
+            Button("New here? How to play ›") { guide = true }
+                .font(Theme.body(15, .semibold))
+                .textCase(Theme.labelCase)
+                .foregroundStyle(Theme.accent)
+                .frame(minHeight: 44)
+                .padding(.top, 4)
             Button { sheet = .found } label: {
                 VStack(alignment: .leading, spacing: 9) {
                     HStack {
@@ -134,6 +141,11 @@ struct WelcomeView: View {
             Spacer()
             Button("Play") { game.deal() }.buttonStyle(FilledButtonStyle())
         }
+        .sheet(isPresented: $guide) {
+            GuideView(play: { guide = false; game.deal() })
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Theme.bg)
+        }
     }
 }
 
@@ -143,7 +155,7 @@ struct QuestionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 8)
+            Spacer(minLength: 16).frame(maxHeight: 84)     // the number rides high, clear of the tier bar
             Text(String(game.n))
                 .font(Theme.number(112))
                 .monospacedDigit()
@@ -157,20 +169,14 @@ struct QuestionView: View {
                 .textCase(Theme.labelCase)
                 .foregroundStyle(Theme.muted)
                 .padding(.top, 6)
-                .padding(.bottom, 22)
+            Spacer(minLength: 24)
             HStack(spacing: 12) {
                 answerButton("Prime", true)
                 answerButton("Composite", false)
             }
-            Spacer(minLength: 8)
-            Spacer(minLength: 0).frame(maxHeight: 72)   // a little extra room below lifts the number above a half sheet
-            HStack(spacing: 8) {
-                Button("Roots") { sheet = .roots }.swipeUpOpens { sheet = .roots }
-                Button("Prime tricks") { sheet = .tricks }.swipeUpOpens { sheet = .tricks }
-                Button("Checklist") { sheet = .checklist }.swipeUpOpens { sheet = .checklist }
-            }
-            .buttonStyle(OutlineButtonStyle())
+            Spacer(minLength: 0).frame(height: ToolFan.size + 20)   // the ✦ corner; an open fan may cover the answers
         }
+        .overlay(alignment: .bottomTrailing) { ToolFan(sheet: $sheet) }
     }
 
     private func answerButton(_ title: String, _ prime: Bool) -> some View {
@@ -273,16 +279,5 @@ struct MathBox: View {
         .padding(.vertical, 10)
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: Theme.r(10)))
         .overlay(RoundedRectangle(cornerRadius: Theme.r(10)).stroke(Theme.border, lineWidth: 1))
-    }
-}
-
-extension View {
-    /// Swipe up on a reference button to pull its sheet up; a tap still works.
-    func swipeUpOpens(_ open: @escaping () -> Void) -> some View {
-        simultaneousGesture(DragGesture(minimumDistance: 16).onEnded { v in
-            guard v.translation.height < -30, abs(v.translation.height) > abs(v.translation.width) else { return }
-            Haptics.tick()
-            open()
-        })
     }
 }

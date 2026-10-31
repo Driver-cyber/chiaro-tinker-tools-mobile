@@ -3,7 +3,7 @@
 Prime or Composite, the CTT pocket tool, as a native SwiftUI app. Same game as
 the ÷ pocket on chiaromobile: numbers 2–999 in Easy / Medium / Hard, every
 answer shows the method, Roots / Prime tricks / Checklist as half-height
-sheets, and a 168-of-168 found-primes meter.
+sheets from a ✦ tool fan, a How to play guide, and a 168-of-168 found-primes meter.
 
 * **Bundle id:** `com.chiarotinkertools.primes` · iPhone, portrait · iOS 17+
 * **Progress:** the found primes live on the phone (UserDefaults), riding the
@@ -36,6 +36,8 @@ first build is its first real compile.
 | `Primes/Engine.swift` | the game logic: buckets, weighted draw, the 11 tricks, explanations |
 | `Primes/Game.swift` | one sitting's state + the found-primes store + haptics |
 | `Primes/ContentView.swift` | welcome / question / answer screens |
+| `Primes/Guide.swift` | How to play, then the scroll-driven why-primes tour |
+| `Primes/ToolFan.swift` | the ✦ corner button that fans out Roots, Prime tricks, Checklist |
 | `Primes/Sheets.swift` | Roots, Prime tricks, Checklist (+ trick detail), Primes found |
 | `Primes/Theme.swift` | the three looks (Lamp, Marginalia, Phosphor), each light and dark; button styles |
 | `PrimesTests/` | acceptance, web-parity and game tests + `web-fixture.json` |
