@@ -596,13 +596,17 @@
       design. *Scar:* the first fan placed its buttons with `.offset`, and
       a UI tap on "Prime tricks" didn't open its sheet; placing everything
       with `.position` in one fixed frame fixed it.
+      *Tuned the same day:* the answers sat too low, so they're back up
+      under the question (the gap is capped), with the free room below.
     * *How to play, and why primes (Chad):* "New here? How to play ›" on
       the welcome screen opens a full-height sheet (swipe down closes).
       The top is enough to play: the square-root rule, 91 tested live (it
       looks prime; it's 7 × 13), why the square root suffices, what the
       buttons do. Below it, Chad's why, then five beats that pin to the
       screen while the scroll drives the math: 360 splitting into primes;
-      Euclid (2·3·5·7 + 1 = 211, and the twist 30031 = 59 × 509); the Ulam
+      Euclid (2·3·5·7 + 1 = 211, prime; and the twist 30031 = 59 × 509,
+      both prime; plain "prime" chips, since "new" / "not on the list"
+      only made sense to someone who knew the game's tracker); the Ulam
       spiral drawing out to 2,601; 12- vs 17-year cicadas against a
       6-year predator (met 8× vs once in 102 years); RSA (61 × 53 = 3233
       forward, trial division back, then a labelled 617-digit stand-in).
