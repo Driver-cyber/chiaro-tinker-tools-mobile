@@ -1,7 +1,10 @@
 # Primes — App Store listing (1.0)
 
 Paste-ready text for App Store Connect. Character limits are Apple's; counts
-were checked when this was written.
+were checked when this was written. App Store Connect rejects "✦" in text
+fields, so the listing says "star-shaped" instead.
+
+**App Store Connect:** Apple ID 6829131144.
 
 | Field | Value |
 |---|---|
@@ -34,7 +37,7 @@ Primes is a small, quiet game for spotting prime numbers by hand. Work it out in
 WHAT'S INSIDE
 • Easy, Medium and Hard, so the numbers get sneakier as you do
 • Every answer shows its method, step by step
-• A ✦ tool button that fans out Roots, Prime tricks and a Checklist, for when you're stuck
+• A star-shaped tool button that fans out Roots, Prime tricks and a Checklist, for when you're stuck
 • Eleven divisibility tricks, from "last digit is even" to the chop tests for 7, 13 and 17
 • 168 primes under 1,000. Each one lights up the first time you call it
 • Three looks: Lamp (warm amber in the dark), Marginalia (gilt on a library green) and Phosphor (an 80s terminal), each in light and dark
@@ -49,7 +52,7 @@ prime,primes,math,mental math,divisibility,factor,composite,number,puzzle,arithm
 
 ## Review notes
 
-No sign-in or setup. Tap Play to get a number and tap Prime or Composite. The ✦ in the bottom-right corner opens the reference tools. "New here? How to play ›" on the first screen opens the guide. The app makes no network requests.
+No sign-in or setup. Tap Play to get a number and tap Prime or Composite. The star-shaped button in the bottom-right corner opens the reference tools. "New here? How to play ›" on the first screen opens the guide. The app makes no network requests.
 
 ## Screenshots (6.9", 1320 × 2868)
 
