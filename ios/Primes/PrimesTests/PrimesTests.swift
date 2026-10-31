@@ -162,6 +162,15 @@ final class GameTests: XCTestCase {
         repeat { g.deal() } while g.isPrime != prime
     }
 
+    func testHomeSetsTheNumberDownUnanswered() {
+        let g = Game(store: freshStore())
+        deal(g, prime: true); g.checked = [2, 3]
+        g.home()
+        XCTAssertEqual(g.screen, .welcome); XCTAssertTrue(g.checked.isEmpty)
+        g.answer(saidPrime: true)
+        XCTAssertEqual(g.screen, .welcome, "no answer from the welcome screen"); XCTAssertEqual(g.foundCount, 0)
+    }
+
     func testFoundPrimesWriteOnlyOnFirstCorrectPrimeCall() {
         let store = freshStore()
         let g = Game(store: store)

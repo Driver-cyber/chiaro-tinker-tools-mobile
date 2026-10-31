@@ -32,10 +32,10 @@ struct RefSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.text)
+                Text(title).font(Theme.body(17, .semibold)).foregroundStyle(Theme.text)
                 Spacer()
                 Button { close() } label: {
-                    Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).frame(width: 48, height: 48)
+                    Image(systemName: "xmark").font(Theme.body(17, .semibold)).frame(width: 48, height: 48)
                 }
                 .foregroundStyle(Theme.text)
                 .accessibilityLabel(detail != nil ? "Back to checklist" : "Close")
@@ -104,7 +104,7 @@ struct RootsView: View {
                  Text("square the round number, add or subtract twice it, then add 1. 21² → 400 + 40 + 1 = 441. 19² → 400 − 40 + 1 = 361."))
                     .padding(.top, 10)
             }
-            .font(.system(size: 14))
+            .font(Theme.body(14))
             .foregroundStyle(Theme.muted)
             .lineSpacing(3)
         }
@@ -117,7 +117,7 @@ struct RootsView: View {
                 Text(left).frame(maxWidth: .infinity, alignment: .leading)
                 Text(right).frame(maxWidth: .infinity, alignment: .leading)
             }
-            .font(head ? .system(size: 11.5, weight: .semibold) : Theme.mono(16))
+            .font(head ? Theme.body(11.5, .semibold) : Theme.mono(16))
             .textCase(head ? .uppercase : nil)
             .foregroundStyle(head ? Theme.muted : Theme.text)
             .padding(.vertical, head ? 6 : 9)
@@ -134,7 +134,7 @@ struct TricksView: View {
                 Text("Prime").frame(width: 52, alignment: .leading)
                 Text("Trick · example")
             }
-            .font(.system(size: 11.5, weight: .semibold))
+            .font(Theme.body(11.5, .semibold))
             .textCase(.uppercase)
             .foregroundStyle(Theme.muted)
             .padding(6)
@@ -143,7 +143,7 @@ struct TricksView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Text(String(p)).font(Theme.mono(16, .bold)).frame(width: 52, alignment: .leading)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(PrimeEngine.tricks[p]!.trick).font(.system(size: 14.5))
+                        Text(PrimeEngine.tricks[p]!.trick).font(Theme.body(14.5))
                         Text(PrimeEngine.tricks[p]!.example).font(Theme.mono(13)).foregroundStyle(Theme.muted)
                     }
                 }
@@ -154,7 +154,7 @@ struct TricksView: View {
                 .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
             }
             Text(PrimeEngine.chopNote)
-                .font(.system(size: 14))
+                .font(Theme.body(14))
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(3)
                 .padding(.top, 12)
@@ -177,11 +177,11 @@ struct ChecklistView: View {
                     } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: Theme.r(8))
                                     .fill(on ? Theme.accent : Color.clear)
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(on ? Theme.accent : Theme.muted, lineWidth: 1.5))
+                                    .overlay(RoundedRectangle(cornerRadius: Theme.r(8)).stroke(on ? Theme.accent : Theme.muted, lineWidth: 1.5))
                                 if on {
-                                    Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.ink)
+                                    Image(systemName: "checkmark").font(Theme.body(15, .bold)).foregroundStyle(Theme.ink)
                                 }
                             }
                             .frame(width: 30, height: 30)
@@ -194,9 +194,9 @@ struct ChecklistView: View {
                     .accessibilityLabel("Cleared \(p)")
                     .accessibilityAddTraits(on ? .isSelected : [])
                     Button { detail = p } label: {
-                        Image(systemName: "info.circle").font(.system(size: 19)).foregroundStyle(Theme.accent)
+                        Image(systemName: "info.circle").font(Theme.body(19)).foregroundStyle(Theme.accent)
                             .frame(width: 48, height: 48)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: Theme.r(12)).stroke(Theme.border, lineWidth: 1))
                     }
                     .accessibilityLabel("\(p) trick")
                 }
@@ -218,21 +218,21 @@ struct TrickDetail: View {
         let worked = PrimeEngine.apply(p, n)
         let showWork = !hideWork || revealed
         VStack(alignment: .leading, spacing: 10) {
-            Text(t.trick).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.text)
+            Text(t.trick).font(Theme.body(16, .semibold)).foregroundStyle(Theme.text)
             (Text("Example: ") + Text(t.example).font(Theme.mono(14)))
-                .font(.system(size: 14))
+                .font(Theme.body(14))
                 .foregroundStyle(Theme.muted)
             if hideWork {
-                Text("Try it on \(n) first.").font(.system(size: 14)).foregroundStyle(Theme.muted).padding(.top, 4)
+                Text("Try it on \(n) first.").font(Theme.body(14)).foregroundStyle(Theme.muted).padding(.top, 4)
                 Button(revealed ? "Hide the work" : "Check my work on \(n)") { revealed.toggle() }
                     .buttonStyle(OutlineButtonStyle(accent: true))
             } else {
-                Text("On \(n):").font(.system(size: 14)).foregroundStyle(Theme.muted).padding(.top, 4)
+                Text("On \(n):").font(Theme.body(14)).foregroundStyle(Theme.muted).padding(.top, 4)
             }
             if showWork {
                 MathBox(lines: worked.steps)
                 Text(worked.ok ? "\(p) divides \(n)." : "\(p) doesn\u{2019}t divide \(n).")
-                    .font(.system(size: 15))
+                    .font(Theme.body(15))
                     .foregroundStyle(Theme.text)
             }
         }
@@ -248,7 +248,7 @@ struct FoundView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Each one lights the first time you call it prime. " +
                  (left > 0 ? "\(left) still in the dark." : "Every prime under 1,000, identified by hand."))
-                .font(.system(size: 14))
+                .font(Theme.body(14))
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(3)
             ForEach(0..<10, id: \.self) { c in
@@ -258,7 +258,7 @@ struct FoundView: View {
                     Spacer()
                     Text("\(ps.filter { solved[$0] != nil }.count) of \(ps.count)")
                 }
-                .font(.system(size: 11.5))
+                .font(Theme.body(11.5))
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.muted)
                 .padding(.top, 14)
@@ -271,8 +271,8 @@ struct FoundView: View {
                             .font(Theme.mono(13.5, lit ? .bold : .regular))
                             .foregroundStyle(lit ? Theme.accent : Theme.muted.opacity(0.4))
                             .frame(maxWidth: .infinity, minHeight: 32)
-                            .background(lit ? Theme.accent.opacity(0.10) : Theme.muted.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
-                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(lit ? Theme.accent : Color.clear, lineWidth: 1))
+                            .background(lit ? Theme.accent.opacity(0.10) : Theme.muted.opacity(0.08), in: RoundedRectangle(cornerRadius: Theme.r(7)))
+                            .overlay(RoundedRectangle(cornerRadius: Theme.r(7)).stroke(lit ? Theme.accent : Color.clear, lineWidth: 1))
                             .accessibilityLabel(lit ? "\(n), found" : "not yet found")
                     }
                 }

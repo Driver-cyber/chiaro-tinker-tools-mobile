@@ -562,6 +562,29 @@
       down to close needed no code: it's the native sheet's own drag from
       the grabber. UI-tested on the simulator in a scratch copy: all three
       open by swipe and close by drag, and taps still open them.
+    * *Three looks, all kept (Chad):* after a mock-up of three directions,
+      Chad kept them all as a picker on the welcome screen, remembered on
+      the phone (`primes.theme` in UserDefaults; not progress, so not
+      synced). **Lamp** is the original. **Marginalia** is a library at
+      night: gilt on green-black, Hoefler Text with old-style figures,
+      ivory paper by day, right answers gilt so it keeps one accent.
+      **Phosphor** is an 80s terminal: green phosphor, SF Mono, uppercase
+      labels, inverse-video selection, faint scanlines, a glow on the
+      number. Each look also follows the phone's light/dark setting.
+      Built-in iOS fonts only, so nothing third-party is bundled (the
+      mock-ups' Garamond and VT323 pixel face stayed on the canvas).
+      Mechanism: `Theme` reads a static `style`, and ContentView rebuilds
+      its tree with `.id(style)` on a change, so views keep their plain
+      `Theme.x` reads. The look is chosen only on the welcome screen, with
+      no sheet open.
+    * *Back to welcome, more room below (Chad):* a ‹ beside the tier bar on
+      the question and answer screens (`Game.home()`: sets the number
+      down unanswered, clears the checklist, keeps the streak), and 28 pt
+      of bottom padding instead of 12 on every screen, so Play and Next sit
+      in the same place.
+    * *Scar:* `.accessibilityLabel` on a container of buttons relabels
+      every button in it. The UI test caught it: all three look buttons
+      read "Look".
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main

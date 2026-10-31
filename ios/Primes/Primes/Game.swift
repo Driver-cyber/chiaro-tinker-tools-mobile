@@ -38,6 +38,12 @@ final class Game: ObservableObject {
         screen = .question
     }
 
+    /// Back to the welcome screen. The number on the table is set down, not answered.
+    func home() {
+        checked = []
+        screen = .welcome
+    }
+
     func answer(saidPrime: Bool) {
         guard screen == .question else { return }
         self.saidPrime = saidPrime
