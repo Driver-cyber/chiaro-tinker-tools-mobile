@@ -5,7 +5,14 @@
       or tap, feedback, Trick card, one retry, round summary). Concept-then-mode
       home screen per Chad's change. 9 unit tests green; a UI test plays the
       whole flow from a fresh install; screen recording sent to Chad.
-- [ ] **M2** — Bigger or Smaller, Add & Subtract, Times Tables (modes by skill)
+- [x] **M2** — Bigger or Smaller (alligator chomp, place-value trick), Add &
+      Subtract (ten-frame, doubles, number-line hops), Times Tables (arrays,
+      ×9 finger trick), all with the approved modes. Shared Card model.
+- [x] **M2.5** — Draw (Chad's idea): Color by Number (to 10, to 20; four
+      pictures; names its shapes when finished), Dot to Dot Steps ("3 right,
+      2 up") and Pairs ("Pin (3, 5)") with Pin / Undo / Clear and a hidden
+      picture that closes and fills, and Explore (close any shape to name it).
+      17 unit tests; a UI test plays every deck and solves a whole picture.
 - [ ] **M3** — sticker book, parent area (gated gear; profile reorder and delete
       move behind it), sound toggle
 - [ ] **M4** — install on the kids' iPhones; tune from watching them play
@@ -13,4 +20,5 @@
 **Decided:** name *Number Sprouts*; haptics only by default (sound later, as a
 parent toggle); modes named by concept and skill, not a difficulty slider.
 **M2 modes approved as proposed** (2026-10-30). **No auto nudge.** A math-and-art
-concept is under discussion (see to-cowork.md).
+concept became **Draw** (M2.5), built and approved in chat.
+**Next after M4's first install:** a sibling app for letters, reading and language (Chad, 2026-10-30), with its brief and decisions still to come.

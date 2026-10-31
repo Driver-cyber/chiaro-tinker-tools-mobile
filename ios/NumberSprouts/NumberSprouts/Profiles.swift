@@ -1,8 +1,8 @@
 //  Profiles.swift — who's playing, and what each kid has earned.
 //
-//  One profile per kid. Each keeps its own levels and stars so the kids'
-//  progress never mixes. Everything lives in UserDefaults on this phone as one
-//  small JSON blob; nothing is sent anywhere.
+//  One profile per kid. Each keeps its own stars (per mode) and finished
+//  pictures, so the kids' progress never mixes. Everything lives in
+//  UserDefaults on this phone as one small JSON blob; nothing is sent anywhere.
 
 import Foundation
 import SwiftUI
@@ -13,15 +13,32 @@ struct Profile: Codable, Identifiable, Equatable {
     var icon: String              // an emoji, or an SF Symbol name when `isSymbol`
     var isSymbol = false
     var color: Int = 0            // index into Theme.tileColors
-    var levels: [String: Level] = [:]       // deck id → chosen level
-    var stars: [String: Int] = [:]          // deck id → stars earned, all rounds
-    var rounds: [String: Int] = [:]         // deck id → rounds finished
+    var stars: [String: Int] = [:]          // mode id → stars earned, all rounds
+    var rounds: [String: Int] = [:]         // mode id → rounds finished
+    var pictures: Set<String> = []          // finished Draw pictures, "dr.steps/boat"
+    var lastMode: String?
 
-    func level(_ deck: String) -> Level { levels[deck] ?? .sprout }
+    init(id: UUID = UUID(), name: String, icon: String, isSymbol: Bool = false, color: Int = 0) {
+        self.id = id; self.name = name; self.icon = icon; self.isSymbol = isSymbol; self.color = color
+    }
+
+    /// Tolerant decoding: a field added later is simply empty in older saves.
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        icon = try c.decode(String.self, forKey: .icon)
+        isSymbol = try c.decodeIfPresent(Bool.self, forKey: .isSymbol) ?? false
+        color = try c.decodeIfPresent(Int.self, forKey: .color) ?? 0
+        stars = try c.decodeIfPresent([String: Int].self, forKey: .stars) ?? [:]
+        rounds = try c.decodeIfPresent([String: Int].self, forKey: .rounds) ?? [:]
+        pictures = try c.decodeIfPresent(Set<String>.self, forKey: .pictures) ?? []
+        lastMode = try c.decodeIfPresent(String.self, forKey: .lastMode)
+    }
 }
 
 final class AppModel: ObservableObject {
-    enum Screen: Equatable { case who, home, play }
+    enum Screen: Equatable { case who, home, play(String) }
 
     @Published private(set) var profiles: [Profile] = []
     @Published var currentID: UUID?
@@ -43,8 +60,11 @@ final class AppModel: ObservableObject {
         Haptics.tick()
     }
 
-    func switchPlayer() {
-        screen = .who
+    func switchPlayer() { screen = .who }
+
+    func play(_ modeID: String) {
+        update { $0.lastMode = modeID }
+        screen = .play(modeID)
     }
 
     /// Adds or replaces a profile by id.
@@ -57,15 +77,15 @@ final class AppModel: ObservableObject {
         persist()
     }
 
-    func setLevel(_ level: Level, deck: String) {
-        update { $0.levels[deck] = level }
+    func recordRound(mode: String, stars: Int) {
+        update {
+            $0.stars[mode, default: 0] += stars
+            $0.rounds[mode, default: 0] += 1
+        }
     }
 
-    func recordRound(deck: String, stars: Int) {
-        update {
-            $0.stars[deck, default: 0] += stars
-            $0.rounds[deck, default: 0] += 1
-        }
+    func recordPicture(_ key: String) {
+        update { $0.pictures.insert(key) }
     }
 
     private func update(_ change: (inout Profile) -> Void) {

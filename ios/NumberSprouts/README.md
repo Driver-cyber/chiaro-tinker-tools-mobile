@@ -27,13 +27,15 @@ the hood the modes still map to the brief's Sprout → Grow → Stretch.
 
 | Path | What |
 |---|---|
-| `NumberSprouts/EvenOdd.swift` | the deck engine: levels, rounds (seedable), parity, tricks, mode names |
-| `NumberSprouts/Round.swift` | one round of 10: right / miss → Trick card → one retry; stars; haptics |
+| `NumberSprouts/Modes.swift` | every concept and its modes, in one list |
+| `NumberSprouts/Round.swift` | the shared Card, one round of ten, choices, haptics |
+| `NumberSprouts/EvenOdd.swift`, `Compare.swift`, `AddSub.swift`, `Times.swift` | the card engines (seedable) |
+| `NumberSprouts/Pictures.swift`, `Draw.swift`, `DotToDot.swift` | Draw: the pictures, Color by Number, Dot to Dot and Explore |
 | `NumberSprouts/Profiles.swift` | kid profiles and per-profile progress (`AppModel`) |
 | `NumberSprouts/WhoView.swift` | "Who's playing?", add and edit a player |
 | `NumberSprouts/HomeView.swift` | concept bar, mode tiles, the player badge |
 | `NumberSprouts/PlayView.swift` | the card loop: drag into a basket, glow, star burst, shake |
-| `NumberSprouts/TrickCard.swift` | the Trick card visuals (dots pairing, last digit) and the round summary |
+| `NumberSprouts/TrickCard.swift` | the Trick card and its visuals, and the round summary |
 | `NumberSprouts/Theme.swift` | bright palette (Even blue, Odd orange), rounded type, big buttons |
 | `NumberSprouts/Speech.swift` | read-aloud (AVSpeechSynthesizer, offline) |
 | `NumberSproutsTests/` | engine, round and profile tests |

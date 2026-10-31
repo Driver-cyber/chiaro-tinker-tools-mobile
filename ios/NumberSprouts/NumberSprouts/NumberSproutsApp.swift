@@ -25,7 +25,7 @@ struct RootView: View {
             switch model.screen {
             case .who: WhoView().transition(.opacity)
             case .home: HomeView().transition(.move(edge: .trailing).combined(with: .opacity))
-            case .play: PlayView(deck: EvenOdd.deckID).transition(.move(edge: .bottom).combined(with: .opacity))
+            case .play(let id): PlayView(modeID: id).transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: model.screen)

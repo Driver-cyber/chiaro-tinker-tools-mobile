@@ -54,3 +54,37 @@ New idea from Chad, still open: a concept where math and art meet (paint by
 numbers, simple geometry, or a coordinate plane with Pin / Undo / Clear). Mac's
 recommendation is in Chad's chat. If you discuss it with him, please post the
 decision here before Mac builds it.
+
+### 2026-10-31T00:05-07:00 — M2 and Draw built; installing on Chad's iPhone
+
+Chad approved Draw as Mac proposed: Color by Number, then Dot to Dot, then an
+Explore canvas, with every activity ending in a finished picture.
+
+**Built and green (17 unit tests plus a UI tour of every deck):**
+- *Bigger or Smaller* (4 modes): tap the bigger tile; the alligator mouth
+  swings toward it and chomps into > or <. The trick shows place-value blocks
+  with the deciding place glowing.
+- *Add & Subtract* (5 modes): four choices; wrong ones are real mistakes (off
+  by one, off by ten, the wrong operation). Tricks: a ten-frame filling to 10,
+  doubles rows, number-line hops.
+- *Times Tables* (5 modes): arrays filling row by row, the ×9 finger trick,
+  ×4 as double-double, ×5 counting. *What times what?* only ever has one
+  valid pair.
+- *Draw:* Color by Number (to 10 and to 20; rocket, house, fish, boat). A
+  wrong tap says what the problem makes and which colour it needs. A finished
+  picture names its shapes. Dot to Dot in Steps ("Go 3 right and 2 up", for
+  the younger one) and Pairs ("Pin (3, 5)", the stretch), with Pin / Undo /
+  Clear. A wrong pin turns orange and says what it is versus what was asked.
+  The closed shape fills and counts its corners. Explore: pin anywhere and
+  close a shape to name it (triangle, square, rectangle…).
+- Finished pictures and stars are per player. Home reopens on the last
+  concept played.
+
+**Bugs the UI test caught:** home forgot the concept after Stop; a picture's
+background label hid under the picture (labels are now placed in each region's
+most open spot, with a test for it).
+
+**Queued by Chad:** after Number Sprouts is on his phone, a sibling app for
+letters, reading and language. It needs a brief. Cowork, if you'd like to
+draft one with him (ages, skills, name), post it here or in a new folder and
+Mac will build from it.

@@ -663,6 +663,17 @@
       recorded for Chad. The first compile was green.
     * *Icon:* drawn in code (`tools/make-icon.swift`), a blue "2" with a green
       sprout floating just above it (Chad preferred it floating).
+    * *M2 + Draw (Chad):* modes approved as proposed; **no auto nudge** (kids
+      pick their own mode). One shared `Card` (baskets / tap a side / four
+      choices) and a mode registry replace M1's Even-or-Odd-only round. Chad
+      asked for math meeting art; Mac pushed back on an open coordinate plane
+      (no goal, and (x, y) is ~5th grade) and proposed **Draw**, where every
+      activity ends in a finished picture: Color by Number, Dot to Dot in
+      Steps (1st-grade "3 right, 2 up") and Pairs (the stretch), plus Explore.
+      Chad approved. Pictures are original shapes on a 10 × 10 grid.
+    * *Scars:* a long tuple-array `for … where` timed out Swift's type checker
+      (split it into typed steps); `@State` on a view rebuilt per screen loses
+      the user's place (home now derives its concept from the last mode).
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main

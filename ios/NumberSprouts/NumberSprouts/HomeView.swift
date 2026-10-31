@@ -4,35 +4,29 @@
 //  in a row at the top. Under the chosen one, its modes are named by the skill
 //  they practise ("Pair the dots", "Last digit"), each with its own stars, so a
 //  kid who has one skill down goes straight to the next instead of wading
-//  through random easy cards. M1 has Even or Odd; the rest arrive in M2.
+//  through random easy cards. The list itself lives in Modes.swift.
 
 import SwiftUI
 
-enum Concept: String, CaseIterable, Identifiable {
-    case evenOdd, biggerSmaller, addSubtract, times
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .evenOdd: return "Even or Odd"
-        case .biggerSmaller: return "Bigger or Smaller"
-        case .addSubtract: return "Add & Subtract"
-        case .times: return "Times Tables"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .evenOdd: return "circle.grid.2x2.fill"
-        case .biggerSmaller: return "greaterthan"
-        case .addSubtract: return "plus.forwardslash.minus"
-        case .times: return "multiply"
-        }
-    }
-    var ready: Bool { self == .evenOdd }
-}
-
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var concept: Concept = .evenOdd
+    @State private var picked: Concept?
+
+    /// Reopens on the concept of the last mode played, so Stop or Done comes back to where the kid was.
+    private var concept: Concept {
+        picked ?? model.current?.lastMode.flatMap { Modes.mode($0)?.concept } ?? .evenOdd
+    }
+
+    /// Stars for card modes; finished pictures for Draw.
+    private func progress(_ mode: Mode, _ p: Profile?) -> (symbol: String, text: String, lit: Bool) {
+        if case .draw(let kind) = mode.play {
+            guard kind != .explore else { return ("scribble", "Free play", false) }
+            let done = p?.pictures.filter { $0.hasPrefix(mode.id + "/") }.count ?? 0
+            return ("photo.fill", "\(done) of \(Pictures.count(kind)) pictures", done > 0)
+        }
+        let stars = p?.stars[mode.id] ?? 0
+        return ("star.fill", "\(stars)", stars > 0)
+    }
 
     var body: some View {
         let p = model.current
@@ -46,20 +40,13 @@ struct HomeView: View {
                 Spacer()
                 PlayerBadge()
             }
-            ConceptBar(selection: $concept)
+            ConceptBar(selection: Binding(get: { concept }, set: { picked = $0 }))
             ScrollView {
                 VStack(spacing: 14) {
-                    if concept.ready {
-                        ForEach(Level.allCases) { level in
-                            ModeTile(level: level,
-                                     stars: p?.stars[EvenOdd.key(level)] ?? 0,
-                                     last: p?.level(EvenOdd.deckID) == level) {
-                                model.setLevel(level, deck: EvenOdd.deckID)
-                                model.screen = .play
-                            }
+                    ForEach(Modes.modes(concept)) { mode in
+                        ModeTile(mode: mode, progress: progress(mode, p), last: p?.lastMode == mode.id) {
+                            model.play(mode.id)
                         }
-                    } else {
-                        ComingSoon(concept: concept)
                     }
                 }
                 .padding(.bottom, 20)
@@ -82,41 +69,49 @@ private struct ConceptBar: View {
                     VStack(spacing: 6) {
                         Image(systemName: c.symbol).font(.system(size: 24, weight: .bold))
                         Text(c.title)
-                            .font(Theme.round(12.5, .bold))
+                            .font(Theme.round(11.5, .bold))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                             .minimumScaleFactor(0.8)
                     }
-                    .foregroundStyle(on ? Theme.onColor : (c.ready ? Theme.text : Theme.muted))
+                    .foregroundStyle(on ? Theme.onColor : Theme.text)
                     .frame(maxWidth: .infinity, minHeight: 88)
                     .padding(.horizontal, 2)
                     .background(on ? Theme.sprout : Theme.card, in: RoundedRectangle(cornerRadius: 20))
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(on ? Theme.sprout : Theme.border, lineWidth: 2))
                 }
-                .accessibilityLabel(c.ready ? c.title : "\(c.title), coming soon")
+                .accessibilityLabel(c.title)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
     }
 }
 
-/// One skill: its name, what it covers, its stars. One tap plays it.
+/// One skill: its name, what it covers, its progress. One tap plays it.
 private struct ModeTile: View {
-    let level: Level
-    let stars: Int
+    let mode: Mode
+    let progress: (symbol: String, text: String, lit: Bool)
     let last: Bool
     let play: () -> Void
 
     var body: some View {
         Button(action: play) {
             HStack(spacing: 16) {
-                ModeIcon(level: level)
+                Text(mode.art)
+                    .font(Theme.round(mode.art.count > 3 ? 19 : 28))
+                    .foregroundStyle(Theme.text)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .padding(6)
+                    .frame(width: 76, height: 76)
+                    .background(Theme.bg, in: RoundedRectangle(cornerRadius: 20))
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(EvenOdd.modeTitle(level)).font(Theme.round(24)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(EvenOdd.modeDetail(level)).font(Theme.round(15, .semibold)).foregroundStyle(Theme.muted)
-                    Label("\(stars)", systemImage: "star.fill")
+                    Text(mode.title).font(Theme.round(22)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(mode.detail).font(Theme.round(15, .semibold)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                    Label(progress.text, systemImage: progress.symbol)
                         .font(Theme.round(15, .bold))
-                        .foregroundStyle(stars > 0 ? Theme.star : Theme.muted.opacity(0.6))
+                        .foregroundStyle(progress.lit ? Theme.star : Theme.muted.opacity(0.6))
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "play.fill")
@@ -131,51 +126,7 @@ private struct ModeTile: View {
             .overlay(RoundedRectangle(cornerRadius: 26).stroke(last ? Theme.sprout : Theme.border, lineWidth: last ? 3 : 2))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(EvenOdd.modeTitle(level)). \(EvenOdd.modeDetail(level)). \(stars) stars")
-    }
-}
-
-/// A small picture of each mode: dots, a numeral, a big number with its last digit lit.
-private struct ModeIcon: View {
-    let level: Level
-    var body: some View {
-        Group {
-            switch level {
-            case .sprout:
-                HStack(spacing: 6) {
-                    VStack(spacing: 5) { dot(Theme.even); dot(Theme.even) }
-                    VStack(spacing: 5) { dot(Theme.odd); dot(.clear) }
-                }
-            case .grow:
-                Text("17").font(Theme.round(34)).foregroundStyle(Theme.text)
-            case .stretch:
-                HStack(spacing: 0) {
-                    Text("34").font(Theme.round(26)).foregroundStyle(Theme.muted)
-                    Text("8").font(Theme.round(26)).foregroundStyle(Theme.onColor)
-                        .padding(.horizontal, 4)
-                        .background(Theme.even, in: RoundedRectangle(cornerRadius: 7))
-                }
-            }
-        }
-        .frame(width: 76, height: 76)
-        .background(Theme.bg, in: RoundedRectangle(cornerRadius: 20))
-        .accessibilityHidden(true)
-    }
-    private func dot(_ c: Color) -> some View { Circle().fill(c).frame(width: 15, height: 15) }
-}
-
-private struct ComingSoon: View {
-    let concept: Concept
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: concept.symbol).font(.system(size: 44, weight: .bold)).foregroundStyle(Theme.muted)
-            Text("\(concept.title) is still growing.")
-                .font(Theme.round(22))
-                .foregroundStyle(Theme.text)
-            Text("Coming soon!").font(Theme.round(17, .semibold)).foregroundStyle(Theme.muted)
-        }
-        .frame(maxWidth: .infinity, minHeight: 220)
-        .background(Theme.card.opacity(0.6), in: RoundedRectangle(cornerRadius: 26))
+        .accessibilityLabel("\(mode.title). \(mode.detail). \(progress.text)")
     }
 }
 
