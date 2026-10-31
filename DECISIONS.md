@@ -505,6 +505,36 @@
       and the no-PiP fallback both exercised); Primes 63/61; acceptance 20/20;
       half-sheet geometry at every size; day map 30/30.
 
+* **[2026-10-31] Primes goes native — `ios/Primes/`, a SwiftUI iPhone app
+  (Chad).** The first native code in this repo, and deliberately small: the
+  Primes pocket tool as its own app, not a wrap of CTT.
+    * *Where (Chad):* a folder in this repo, not a new repo — this
+      constitution already homes iOS native here (M2), and Pages publishes
+      only `src/`, so the folder can't touch chiaromobile. Moving it to its
+      own repo later is a `git mv`.
+    * *Progress (Chad):* its own 168-of-168 on the phone (UserDefaults,
+      riding the device's iCloud backup). No sync secret in a native binary,
+      fully offline, no merge logic. The web game keeps its own count.
+    * *Bundle id:* `com.chiarotinkertools.primes` — chosen deliberately on
+      day one per the inherited scar. iPhone, portrait, iOS 17+.
+    * *Native touches, not a redesign:* the same three screens, sheets as
+      true iOS half-height sheets (`.presentationDetents([.medium])`, so the
+      number stays in view as Chad asked on the web), success/error haptics,
+      light/dark following the phone (Cream in daylight).
+    * *Written without a compiler:* download.swift.org is outside this
+      sandbox's network policy and SwiftUI is Apple-only anyway, so the first
+      real compile happens in Chad's Xcode. Mitigations: the project file
+      uses Xcode 16 folder-synchronized groups (tiny, hand-checkable) and was
+      parsed and cross-referenced (26 objects, no dangling refs); the engine
+      type is `PrimeEngine` (not `Primes`, the module name); and the test
+      target carries **web parity** — `web-fixture.json`, generated from the
+      live web engine, compares every number 2–999 and all 10,978
+      trick-on-number pairs, so any drift in the Swift port fails by name on
+      the first ⌘U. `tools/make-fixture.js` regenerates it if the web game
+      changes.
+    * *Open offer:* if Chad turns on Remote Control for this folder on his
+      Mac, Claude can run `xcodebuild` there and fix compile errors directly.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
