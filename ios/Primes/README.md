@@ -37,7 +37,7 @@ first build is its first real compile.
 | `Primes/Game.swift` | one sitting's state + the found-primes store + haptics |
 | `Primes/ContentView.swift` | welcome / question / answer screens |
 | `Primes/Sheets.swift` | Roots, Prime tricks, Checklist (+ trick detail), Primes found |
-| `Primes/Theme.swift` | chiaroscuro colours (Cream in light mode), button styles |
+| `Primes/Theme.swift` | the three looks (Lamp, Marginalia, Phosphor), each light and dark; button styles |
 | `PrimesTests/` | acceptance, web-parity and game tests + `web-fixture.json` |
 | `tools/make-fixture.js` | regenerates the fixture from `src/index.html` |
 | `icon-source.html` | the app icon's SVG source (amber ÷, lamp glow) |

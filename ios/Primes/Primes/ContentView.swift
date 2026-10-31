@@ -5,19 +5,32 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var game = Game()
     @State private var sheet: SheetRoute?
+    @AppStorage(Theme.storeKey) private var style = Theme.style.rawValue
 
     var body: some View {
         ZStack {
             Theme.bg.ignoresSafeArea()
+            if Theme.style == .phosphor { Scanlines().ignoresSafeArea() }
             VStack(spacing: 6) {
-                TierBar(tier: $game.tier)
+                HStack(spacing: 8) {
+                    Button { sheet = nil; game.home() } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 48)
+                    }
+                    .foregroundStyle(Theme.muted)
+                    .accessibilityLabel("Back to welcome")
+                    .opacity(game.screen == .welcome ? 0 : 1)
+                    .disabled(game.screen == .welcome)
+                    SegmentBar(options: Tier.allCases, selection: $game.tier) { $0.title }
+                    Color.clear.frame(width: 44, height: 48)          // balances the back button, so the bar stays centred
+                }
                 Text("Streak \(game.streak)")
-                    .font(.footnote.monospacedDigit())
+                    .font(Theme.body(13).monospacedDigit())
+                    .textCase(Theme.labelCase)
                     .foregroundStyle(Theme.muted)
                     .opacity(game.screen == .welcome ? 0 : 1)   // keeps its line, so Play doesn't shift the layout
                 Group {
                     switch game.screen {
-                    case .welcome:  WelcomeView(game: game, sheet: $sheet)
+                    case .welcome:  WelcomeView(game: game, sheet: $sheet, style: $style)
                     case .question: QuestionView(game: game, sheet: $sheet)
                     case .answer:   AnswerView(game: game, sheet: $sheet)
                     }
@@ -26,9 +39,10 @@ struct ContentView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.bottom, 28)
             .frame(maxWidth: 520)
         }
+        .id(style)                                    // a new look rebuilds the tree, so every Theme value is re-read
         .tint(Theme.accent)
         .sheet(item: $sheet) { route in
             RefSheet(route: route, game: game, sheet: $sheet)
@@ -39,25 +53,34 @@ struct ContentView: View {
     }
 }
 
-struct TierBar: View {
-    @Binding var tier: Tier
+/// A row of equal segments: the tier picker, and the look picker on the welcome screen.
+struct SegmentBar<T: Hashable>: View {
+    let options: [T]
+    @Binding var selection: T
+    let title: (T) -> String
+
     var body: some View {
+        let inverse = Theme.style == .phosphor        // a terminal shows the selection in inverse video
         HStack(spacing: 0) {
-            ForEach(Tier.allCases) { t in
-                Button { tier = t; Haptics.tick() } label: {
-                    Text(t.title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(t == tier ? Theme.accent : Theme.muted)
+            ForEach(options, id: \.self) { t in
+                let on = t == selection
+                Button { selection = t; Haptics.tick() } label: {
+                    Text(title(t))
+                        .font(Theme.body(15, .semibold))
+                        .textCase(Theme.labelCase)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(on ? (inverse ? Theme.ink : Theme.accent) : Theme.muted)
                         .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(t == tier ? Theme.accent.opacity(0.14) : Color.clear)
+                        .background(on ? (inverse ? Theme.accent : Theme.accent.opacity(0.14)) : Color.clear)
                 }
-                .accessibilityAddTraits(t == tier ? .isSelected : [])
-                if t != Tier.allCases.last { Theme.border.frame(width: 1) }
+                .accessibilityAddTraits(on ? .isSelected : [])
+                if t != options.last { Theme.border.frame(width: 1) }
             }
         }
         .frame(maxWidth: 340)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.r(12)))
+        .overlay(RoundedRectangle(cornerRadius: Theme.r(12)).stroke(Theme.border, lineWidth: 1))
         .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -65,6 +88,7 @@ struct TierBar: View {
 struct WelcomeView: View {
     @ObservedObject var game: Game
     @Binding var sheet: SheetRoute?
+    @Binding var style: String
 
     var body: some View {
         VStack(spacing: 0) {
@@ -74,7 +98,7 @@ struct WelcomeView: View {
                 .foregroundStyle(Theme.accent)
                 .multilineTextAlignment(.center)
             Text("A number from 2 to 999. Work it out by hand, then call it. Every answer shows the method.")
-                .font(.system(size: 15))
+                .font(Theme.body(15))
                 .foregroundStyle(Theme.muted)
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
@@ -87,7 +111,7 @@ struct WelcomeView: View {
                         Spacer()
                         Text("See them ›").foregroundStyle(Theme.accent)
                     }
-                    .font(.system(size: 13.5))
+                    .font(Theme.body(13.5))
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Theme.muted.opacity(0.18))
@@ -99,10 +123,14 @@ struct WelcomeView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.border, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: Theme.r(12)).stroke(Theme.border, lineWidth: 1))
             }
             .frame(maxWidth: 320)
             .padding(.top, 28)
+            SegmentBar(options: Style.allCases, selection: Binding(
+                get: { Theme.style },
+                set: { Theme.style = $0; style = $0.rawValue })) { $0.title }
+                .padding(.top, 20)
             Spacer()
             Button("Play") { game.deal() }.buttonStyle(FilledButtonStyle())
         }
@@ -117,14 +145,16 @@ struct QuestionView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
             Text(String(game.n))
-                .font(Theme.mono(112, .bold))
+                .font(Theme.number(112))
                 .monospacedDigit()
+                .shadow(color: Theme.glow, radius: 10)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(Theme.text)
                 .accessibilityLabel("Number \(game.n)")
-            Text("Is it prime?")
-                .font(.system(size: 16))
+            Text(Theme.prompt + "Is it prime?")
+                .font(Theme.body(16))
+                .textCase(Theme.labelCase)
                 .foregroundStyle(Theme.muted)
                 .padding(.top, 6)
                 .padding(.bottom, 22)
@@ -146,11 +176,12 @@ struct QuestionView: View {
     private func answerButton(_ title: String, _ prime: Bool) -> some View {
         Button { game.answer(saidPrime: prime) } label: {
             Text(title)
-                .font(.system(size: 21, weight: .bold))
+                .font(Theme.body(21, .bold))
+                .textCase(Theme.labelCase)
                 .foregroundStyle(Theme.text)
                 .frame(maxWidth: .infinity, minHeight: 92)
-                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.accent, lineWidth: 1.5))
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: Theme.r(16)))
+                .overlay(RoundedRectangle(cornerRadius: Theme.r(16)).stroke(Theme.accent, lineWidth: 1.5))
         }
     }
 }
@@ -169,10 +200,10 @@ struct AnswerView: View {
                         .padding(.top, 14)
                     (Text(String(game.n)).font(Theme.mono(15, .bold)).foregroundColor(Theme.text) +
                      Text(" is \(game.isPrime ? "prime" : "composite").").foregroundColor(Theme.muted))
-                        .font(.system(size: 15))
+                        .font(Theme.body(15))
                     if game.freshFind {
                         Text("New prime found · \(game.foundCount) of \(PrimeEngine.all.count)")
-                            .font(.system(size: 14))
+                            .font(Theme.body(14))
                             .foregroundStyle(Theme.accent)
                     }
                     if game.isPrime { primeExplanation } else { compositeExplanation }
@@ -207,16 +238,16 @@ struct AnswerView: View {
                             Text(String(p)).font(Theme.mono(16)).foregroundStyle(Theme.text)
                                 .frame(minWidth: 48, minHeight: 48)
                                 .frame(maxWidth: .infinity)
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: Theme.r(10)).stroke(Theme.border, lineWidth: 1))
                         }
                     }
                 }
                 Text("Tap a prime to watch its trick fail on \(game.n).")
-                    .font(.system(size: 13))
+                    .font(Theme.body(13))
                     .foregroundStyle(Theme.muted)
             }
         }
-        .font(.system(size: 15))
+        .font(Theme.body(15))
     }
 }
 
@@ -240,8 +271,8 @@ struct MathBox: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Theme.panel, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: Theme.r(10)))
+        .overlay(RoundedRectangle(cornerRadius: Theme.r(10)).stroke(Theme.border, lineWidth: 1))
     }
 }
 
