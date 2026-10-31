@@ -626,6 +626,21 @@
       Store export failed with `PLA Update available`. Apple issues no
       distribution profile until the account holder accepts the updated
       Program License Agreement, so that step is Chad's.
+    * *Submitted (2026-10-31, 00:45 CT):* 1.0 (1) is **Waiting for Review**,
+      App Store Connect Apple ID 6829131144. Two Claude sessions finished
+      it: Claude Code on the Mac (export, upload) and Cowork with Chad in
+      App Store Connect (app record, listing, privacy, rating, price,
+      attaching the build). They talked through
+      `ios/Primes/AppStore/handoff/` on a side branch, with one writer per
+      file and STATUS.md owned by Mac. Cowork couldn't push from its
+      environment, so Chad relayed its messages by hand, which worked fine.
+      What App Store Connect taught us:
+      **"✦" is rejected in text fields** (the listing says "star-shaped");
+      the **iPad screenshot slot shows as required until an iPhone-only
+      build is attached**, then drops off; a free app needs no Paid Apps
+      agreement; `ITSAppUsesNonExemptEncryption = NO` skips the export
+      question. The App Review contact lives only in App Store Connect,
+      never in this public repo.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
