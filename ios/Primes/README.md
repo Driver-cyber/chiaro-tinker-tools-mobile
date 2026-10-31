@@ -14,9 +14,10 @@ sheets, and a 168-of-168 found-primes meter.
 ## Run it on your iPhone (no Terminal needed)
 
 1. **Open** `ios/Primes/Primes.xcodeproj` in Xcode 16 or newer.
-2. **Signing:** click the blue *Primes* project icon → target **Primes** →
-   *Signing & Capabilities* → **Team:** pick your Apple Developer team.
-   (Do the same for the **PrimesTests** target.)
+2. **Signing:** Chad's team (`Y3D7LWWL56`) is already set in the project.
+   If Xcode still asks, click the blue *Primes* project icon → target
+   **Primes** → *Signing & Capabilities* → **Team:** pick your Apple
+   Developer team. (Do the same for the **PrimesTests** target.)
 3. **Plug in your iPhone**, pick it in the device menu at the top of the
    window, and press **▶ Run**. The first time, the phone may ask you to trust
    the developer: *Settings → General → VPN & Device Management*. It may also
