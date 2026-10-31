@@ -585,6 +585,33 @@
     * *Scar:* `.accessibilityLabel` on a container of buttons relabels
       every button in it. The UI test caught it: all three look buttons
       read "Look".
+    * *The ✦ tool fan (Chad; revises "swipe up to open" above):* the
+      bottom row of Roots / Prime tricks / Checklist became a ✦ in the
+      bottom-right corner that fans out three round buttons (Roots up,
+      Prime tricks on the diagonal, Checklist left), labels placed
+      radially as on the web pocket FAB. Swipe-up is gone. The question
+      screen re-laid for the thumb: tier bar a little lower (every screen),
+      the number higher with a capped gap under it, Prime / Composite lower
+      in the room the row used to take. An open fan may cover them, by
+      design. *Scar:* the first fan placed its buttons with `.offset`, and
+      a UI tap on "Prime tricks" didn't open its sheet; placing everything
+      with `.position` in one fixed frame fixed it.
+    * *How to play, and why primes (Chad):* "New here? How to play ›" on
+      the welcome screen opens a full-height sheet (swipe down closes).
+      The top is enough to play: the square-root rule, 91 tested live (it
+      looks prime; it's 7 × 13), why the square root suffices, what the
+      buttons do. Below it, Chad's why, then five beats that pin to the
+      screen while the scroll drives the math: 360 splitting into primes;
+      Euclid (2·3·5·7 + 1 = 211, and the twist 30031 = 59 × 509); the Ulam
+      spiral drawing out to 2,601; 12- vs 17-year cicadas against a
+      6-year predator (met 8× vs once in 102 years); RSA (61 × 53 = 3233
+      forward, trial division back, then a labelled 617-digit stand-in).
+      Ends on 168 and Play. Every figure is checked arithmetic; the
+      claims that are theory say so ("one theory", "nobody has proved all
+      of it"). Scroll-driven, so the reader sets the pace; the one timed
+      animation (91's checks) respects Reduce Motion. *Scar:* a
+      GeometryReader can report a zero height on its first pass, and
+      `Int(0 / 0)` traps; guard every division by a measured size.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
