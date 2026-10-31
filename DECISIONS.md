@@ -534,6 +534,28 @@
       changes.
     * *Open offer:* if Chad turns on Remote Control for this folder on his
       Mac, Claude can run `xcodebuild` there and fix compile errors directly.
+    * *First real compile (Mac mini, Xcode 26.5, iOS 26 simulator): nothing
+      broke.* The project opened, built and passed all 10 tests on the
+      first `xcodebuild test`, with zero Swift warnings. None of the
+      ranked trouble spots fired: no type-checker timeouts, no `Text`
+      concatenation or availability errors, and `web-fixture.json` landed
+      in the test bundle via the synchronized folder. Checked that the
+      green wasn't vacuous: parity asserts all 998 numbers and 10,978
+      pairs, and a fixture regenerated from today's `src/index.html`
+      (in a scratch copy) is byte-identical to the committed one.
+      Screenshots driven by a throwaway XCUITest in a scratch copy of
+      the project (simctl can't tap, and AppleScript UI scripting hangs
+      behind a macOS Accessibility prompt). Welcome, question,
+      answer and all three half-height sheets render as designed, in
+      Cream and in dark.
+    * *Signing:* `DEVELOPMENT_TEAM = Y3D7LWWL56` (Chad's team, the same
+      one kasette-native uses) is now committed, so ⌘R works without the
+      Signing step. The team's wildcard profile covers the bundle id. First
+      install went to Chad's iPhone 16e over Wi-Fi with a Release build:
+      `xcodebuild … -destination 'id=<hardware UDID>' -allowProvisioningUpdates`,
+      then `xcrun devicectl device install app`. The scar for next time:
+      a `-destination id=` needs the hardware UDID (`xcrun xctrace list
+      devices`), not the CoreDevice identifier.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
