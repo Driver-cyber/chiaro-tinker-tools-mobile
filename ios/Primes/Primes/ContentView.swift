@@ -135,9 +135,9 @@ struct QuestionView: View {
             Spacer(minLength: 8)
             Spacer(minLength: 0).frame(maxHeight: 72)   // a little extra room below lifts the number above a half sheet
             HStack(spacing: 8) {
-                Button("Roots") { sheet = .roots }
-                Button("Prime tricks") { sheet = .tricks }
-                Button("Checklist") { sheet = .checklist }
+                Button("Roots") { sheet = .roots }.swipeUpOpens { sheet = .roots }
+                Button("Prime tricks") { sheet = .tricks }.swipeUpOpens { sheet = .tricks }
+                Button("Checklist") { sheet = .checklist }.swipeUpOpens { sheet = .checklist }
             }
             .buttonStyle(OutlineButtonStyle())
         }
@@ -242,5 +242,16 @@ struct MathBox: View {
         .padding(.vertical, 10)
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+    }
+}
+
+extension View {
+    /// Swipe up on a reference button to pull its sheet up; a tap still works.
+    func swipeUpOpens(_ open: @escaping () -> Void) -> some View {
+        simultaneousGesture(DragGesture(minimumDistance: 16).onEnded { v in
+            guard v.translation.height < -30, abs(v.translation.height) > abs(v.translation.width) else { return }
+            Haptics.tick()
+            open()
+        })
     }
 }
