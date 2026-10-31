@@ -671,6 +671,12 @@
       activity ends in a finished picture: Color by Number, Dot to Dot in
       Steps (1st-grade "3 right, 2 up") and Pairs (the stretch), plus Explore.
       Chad approved. Pictures are original shapes on a 10 × 10 grid.
+    * *After Chad played it (2026-10-31):* easier on-ramps: "+1 and +2", "×0 ×1",
+      and the ×2, ×3, ×4 tables as their own modes (replacing "×2 ×5 ×10" and
+      "×3 ×4"; "×5 ×10" stays). **All speech removed** from Number Sprouts:
+      `AVSpeechSynthesizer` interrupts other audio by default, and it paused
+      Chad's music when a picture was finished. The reading app keeps speech
+      as an option, ducking rather than pausing. Theme music: v2.
     * *Scars:* a long tuple-array `for … where` timed out Swift's type checker
       (split it into typed steps); `@State` on a view rebuilt per screen loses
       the user's place (home now derives its concept from the last mode).

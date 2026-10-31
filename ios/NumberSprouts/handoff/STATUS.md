@@ -21,4 +21,8 @@
 parent toggle); modes named by concept and skill, not a difficulty slider.
 **M2 modes approved as proposed** (2026-10-30). **No auto nudge.** A math-and-art
 concept became **Draw** (M2.5), built and approved in chat.
+**Chad's notes after playing on his iPhone (2026-10-31), done:** easier modes
+(+1 and +2; ×0 ×1; the ×2, ×3 and ×4 tables one at a time; ×5 ×10), and **no
+read-aloud or sound at all** in Number Sprouts (finishing a picture paused his
+music). **v2 idea:** a quiet, catchy theme-music loop.
 **Next after M4's first install:** a sibling app for letters, reading and language (Chad, 2026-10-30), with its brief and decisions still to come.

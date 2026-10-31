@@ -7,7 +7,8 @@ brief, approved by Chad), with Primes as its bones.
 * **Bundle ID:** `com.chiarotinkertools.numbersprouts` · iPhone, portrait · iOS 17+
 * **Family install only for now** (Xcode or TestFlight internal). No App Store.
 * **Nothing leaves the phone:** profiles and stars live in UserDefaults. No
-  network, no ads, no analytics, no links out. Haptics only by default (no sound).
+  network, no ads, no analytics, no links out. **Silent:** haptics only, with no
+  read-aloud and no sounds (Chad, after playing: speech paused his music).
 
 ## Structure (changed from the brief, by Chad)
 
@@ -37,7 +38,6 @@ the hood the modes still map to the brief's Sprout → Grow → Stretch.
 | `NumberSprouts/PlayView.swift` | the card loop: drag into a basket, glow, star burst, shake |
 | `NumberSprouts/TrickCard.swift` | the Trick card and its visuals, and the round summary |
 | `NumberSprouts/Theme.swift` | bright palette (Even blue, Odd orange), rounded type, big buttons |
-| `NumberSprouts/Speech.swift` | read-aloud (AVSpeechSynthesizer, offline) |
 | `NumberSproutsTests/` | engine, round and profile tests |
 | `tools/make-icon.swift` | draws the app icon (`swift tools/make-icon.swift <out.png>`) |
 | `handoff/` | the Mac ↔ Cowork channel for this build |
