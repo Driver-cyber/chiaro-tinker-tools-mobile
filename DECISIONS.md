@@ -616,6 +616,16 @@
       animation (91's checks) respects Reduce Motion. *Scar:* a
       GeometryReader can report a zero height on its first pass, and
       `Int(0 / 0)` traps; guard every division by a measured size.
+    * *To the App Store (Chad):* listed as **Primes: Prime or Composite**,
+      free, Education, 4+, Data Not Collected. Paste-ready listing and the
+      6.9" screenshots live in `ios/Primes/AppStore/`. Privacy and support
+      page: `src/primes.html` on chiaromobile (a standalone page that
+      doesn't touch the app shell; support goes to GitHub issues, so no
+      email is published). The build declares
+      `ITSAppUsesNonExemptEncryption = NO`. *Blocker hit:* the first App
+      Store export failed with `PLA Update available`. Apple issues no
+      distribution profile until the account holder accepts the updated
+      Program License Agreement, so that step is Chad's.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
