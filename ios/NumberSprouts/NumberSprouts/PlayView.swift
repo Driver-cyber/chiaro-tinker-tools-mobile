@@ -77,7 +77,7 @@ struct RoundView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: round.phase)
-        .onChange(of: round.phase) { _, phase in
+        .onChange(of: round.phase) { phase in
             if phase == .right {
                 bursts += 1
                 Task {
@@ -430,7 +430,7 @@ struct Mouth: View {
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.45), value: opensToward)
-        .onChange(of: opensToward) { _, v in
+        .onChange(of: opensToward) { v in
             guard v != nil else { chomp = false; return }
             withAnimation(.easeInOut(duration: 0.14).repeatCount(3, autoreverses: true)) { chomp = true }
         }
@@ -487,7 +487,7 @@ struct Burst: View {
             }
         }
         .accessibilityHidden(true)
-        .onChange(of: trigger) { _, _ in
+        .onChange(of: trigger) { _ in
             out = false
             withAnimation(.easeOut(duration: 0.8)) { out = true }
         }
