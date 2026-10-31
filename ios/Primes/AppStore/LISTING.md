@@ -14,8 +14,8 @@ were checked when this was written.
 | **Price** | Free (no in-app purchases, no ads) |
 | **Version / build** | 1.0 (1) |
 | **Copyright** | © 2026 Chad Stewart |
-| **Privacy policy URL** | https://chiaromobile.chadstewartcpa.com/primes.html#privacy |
-| **Support URL** | https://chiaromobile.chadstewartcpa.com/primes.html#support |
+| **Privacy policy URL** | https://chiaromobile.chadstewartcpa.com/primes#privacy |
+| **Support URL** | https://chiaromobile.chadstewartcpa.com/primes#support |
 | **Age rating** | 4+ (answer "None" / "No" to every question) |
 | **App Privacy** | Data Not Collected |
 | **Export compliance** | Declared in the build (`ITSAppUsesNonExemptEncryption = NO`), so no question at upload |
