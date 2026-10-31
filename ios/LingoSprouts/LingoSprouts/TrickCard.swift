@@ -1,25 +1,30 @@
 //  TrickCard.swift — after a miss, the trick that cracks it; after a round, the stars.
 //
-//  The Trick card says one short sentence and shows it with a small animation:
-//  dots pairing up, the last digit lighting, place-value blocks, a ten-frame
-//  filling, two matching rows, hops along a number line, an array filling row
-//  by row, or the ×9 finger trick.
+//  The Trick card shows the answer, one short sentence, and a small animation:
+//  letters glowing, sounds sliding together, a rhyme family's endings lighting
+//  up, one clap per syllable, two words joining, the magic e hopping on, or
+//  the right word dropping into its sentence. 🔊 reads it.
 
 import SwiftUI
 
 struct TrickOverlay: View {
     let trick: Trick
+    let readAloud: Bool
     let gotIt: () -> Void
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Color.black.opacity(0.35).ignoresSafeArea().accessibilityHidden(true)
             VStack(spacing: 18) {
-                Text(trick.headline)
-                    .font(Theme.round(36))
-                    .foregroundStyle(Theme.text)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
+                HStack {
+                    Text(trick.headline)
+                        .font(Theme.round(30))
+                        .foregroundStyle(Theme.text)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(2)
+                    Spacer(minLength: 8)
+                    CircleButton(symbol: "speaker.wave.2.fill", label: "Read the trick") { Reader.shared.say(trick.headline + ". " + trick.sentence) }
+                }
                 TrickVisualView(visual: trick.visual)
                     .frame(maxWidth: .infinity, minHeight: 120)
                 Text(trick.sentence)
@@ -35,7 +40,7 @@ struct TrickOverlay: View {
             .padding(12)
             .transition(.move(edge: .bottom))
         }
-        .onAppear { Speech.say(trick.sentence) }
+        .onAppear { if readAloud { Reader.shared.say(trick.sentence) } }
     }
 }
 
@@ -43,14 +48,13 @@ struct TrickVisualView: View {
     let visual: TrickVisual
     var body: some View {
         switch visual {
-        case .pairs(let n): PairsVisual(n: n)
-        case .lastDigit(let n): LastDigitVisual(n: n)
-        case .placeValue(let a, let b): PlaceValueVisual(a: a, b: b)
-        case .tenFrame(let a, let b): TenFrameVisual(big: a, small: b)
-        case .doubles(let a, let b): DoublesVisual(a: a, b: b)
-        case .hops(let from, let to): HopsVisual(from: from, to: to)
-        case .array(let r, let c): ArrayVisual(rows: r, cols: c)
-        case .nines(let n): NinesVisual(n: n)
+        case .letters(let word, let picture, let lit): LettersVisual(word: word, picture: picture, lit: lit)
+        case .blend(let letters, let word, let picture): BlendVisual(letters: letters, word: word, picture: picture)
+        case .rhyme(let words, let ending): RhymeVisual(words: words, ending: ending)
+        case .syllables(let parts, let picture): SyllablesVisual(parts: parts, picture: picture)
+        case .compound(let a, let b, let w): CompoundVisual(a: a, b: b, word: w)
+        case .magicE(let base, let word): MagicEVisual(base: base, word: word)
+        case .sentence(let s, let word, let picture): SentenceVisual(sentence: s, word: word, picture: picture)
         }
     }
 }
@@ -63,322 +67,187 @@ private struct Reveal: ViewModifier {
     func body(content: Content) -> some View {
         content.onAppear {
             if reduceMotion { on = true; return }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(delay)) { on = true }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(delay)) { on = true }
         }
     }
 }
 
-/// Two numbers as hundreds flats, tens rods and ones cubes; the deciding place glows.
-struct PlaceValueVisual: View {
-    let a: Int
-    let b: Int
-    @State private var lit = false
-
-    private var deciding: Int {          // 100, 10 or 1: the biggest place where they differ
-        for u in [100, 10, 1] where a / u % 10 != b / u % 10 && (max(a, b) >= u || u == 1) { return u }
-        return 1
-    }
+/// Letter tiles for a word; some glow.
+struct LetterTiles: View {
+    let word: String
+    let lit: Set<Int>
+    var size: CGFloat = 44
+    var color: Color = Theme.even
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            row(a)
-            row(b)
-        }
-        .modifier(Reveal(on: $lit))
-        .accessibilityElement()
-        .accessibilityLabel("\(a) and \(b) in hundreds, tens and ones")
-    }
-
-    private func row(_ n: Int) -> some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            Text(String(n)).font(Theme.round(22)).foregroundStyle(Theme.text).frame(width: 52, alignment: .leading)
-            blocks(n / 100, unit: 100) { RoundedRectangle(cornerRadius: 3).frame(width: 20, height: 20) }
-            blocks(n / 10 % 10, unit: 10) { RoundedRectangle(cornerRadius: 2).frame(width: 7, height: 30) }
-            blocks(n % 10, unit: 1) { RoundedRectangle(cornerRadius: 2).frame(width: 7, height: 7) }
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func blocks<S: View>(_ count: Int, unit: Int, @ViewBuilder _ shape: () -> S) -> some View {
-        let glow = lit && unit == deciding
-        let s = shape()
-        return HStack(alignment: .bottom, spacing: 2) {
-            ForEach(0..<count, id: \.self) { _ in s }
-        }
-        .foregroundStyle(glow ? Theme.odd : Theme.even.opacity(0.75))
-        .scaleEffect(glow ? 1.08 : 1, anchor: .bottom)
-    }
-}
-
-/// Fill a ten-frame with the big number, top it up to 10 from the small one, the rest spill over.
-struct TenFrameVisual: View {
-    let big: Int
-    let small: Int
-    @State private var moved = false
-
-    var body: some View {
-        let need = 10 - big
-        VStack(spacing: 10) {
-            frame(filled: big, extra: moved ? need : 0)
-            HStack(spacing: 6) {
-                ForEach(0..<small, id: \.self) { i in
-                    Circle().fill(Theme.odd).frame(width: 22, height: 22)
-                        .opacity(moved && i < need ? 0 : 1)
-                }
+        HStack(spacing: 4) {
+            ForEach(Array(word.enumerated()), id: \.offset) { k, ch in
+                let on = lit.contains(k)
+                Text(String(ch))
+                    .font(Theme.round(size))
+                    .foregroundStyle(on ? Theme.onColor : Theme.text)
+                    .frame(minWidth: size * 0.8)
+                    .padding(.horizontal, 4)
+                    .background(on ? color : Color.clear, in: RoundedRectangle(cornerRadius: 10))
             }
-            .frame(minHeight: 22)
         }
-        .modifier(Reveal(on: $moved, delay: 0.6))
-        .accessibilityElement()
-        .accessibilityLabel("\(big) fills most of a ten frame; \(need) more from \(small) make 10, and \(small - need) are left")
     }
+}
 
-    private func frame(filled: Int, extra: Int) -> some View {
-        VStack(spacing: 4) {
-            ForEach(0..<2, id: \.self) { r in
-                HStack(spacing: 4) {
-                    ForEach(0..<5, id: \.self) { c in
-                        let i = r * 5 + c
-                        RoundedRectangle(cornerRadius: 6).stroke(Theme.border, lineWidth: 2)
-                            .frame(width: 34, height: 34)
-                            .overlay {
-                                if i < filled { Circle().fill(Theme.even).padding(6) }
-                                else if i < filled + extra { Circle().fill(Theme.odd).padding(6).transition(.scale) }
-                            }
-                    }
+struct LettersVisual: View {
+    let word: String
+    let picture: String
+    let lit: [Int]
+    @State private var on = false
+    var body: some View {
+        HStack(spacing: 16) {
+            if !picture.isEmpty { Text(picture).font(.system(size: 64)) }
+            LetterTiles(word: word, lit: on ? Set(lit) : [], size: word.count > 5 ? 40 : 52)
+                .minimumScaleFactor(0.5)
+        }
+        .modifier(Reveal(on: $on))
+        .accessibilityElement()
+        .accessibilityLabel(word)
+    }
+}
+
+/// Separate letter sounds slide together into the word, then the picture pops in.
+struct BlendVisual: View {
+    let letters: [String]
+    let word: String
+    let picture: String
+    @State private var joined = false
+    var body: some View {
+        HStack(spacing: joined ? 0 : 22) {
+            ForEach(Array(letters.enumerated()), id: \.offset) { _, l in
+                Text(l).font(Theme.round(52)).foregroundStyle(joined ? Theme.even : Theme.text)
+            }
+            if joined { Text(" " + picture).font(.system(size: 56)).transition(.scale) }
+        }
+        .modifier(Reveal(on: $joined, delay: 0.7))
+        .accessibilityElement()
+        .accessibilityLabel(letters.joined(separator: ", ") + " makes " + word)
+    }
+}
+
+/// A family of words stacked, endings glowing. With no shared ending (not a
+/// rhyme), each word's own ending glows instead.
+struct RhymeVisual: View {
+    let words: [Word]
+    let ending: String
+    @State private var on = false
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            ForEach(words, id: \.self) { w in
+                let end = ending.isEmpty ? (Rhymes.ending(of: w) ?? "") : ending
+                HStack(spacing: 10) {
+                    Text(w.pic).font(.system(size: 34))
+                    LetterTiles(word: w.text, lit: on ? Set((w.text.count - end.count)..<w.text.count) : [], size: 34,
+                                color: ending.isEmpty && w != words.first ? Theme.odd : Theme.even)
                 }
             }
         }
-    }
-}
-
-/// Two rows that match; a near-double has one extra, which glows.
-struct DoublesVisual: View {
-    let a: Int
-    let b: Int
-    @State private var lit = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            dots(a, extra: false)
-            dots(b, extra: b > a)
-        }
-        .modifier(Reveal(on: $lit))
+        .modifier(Reveal(on: $on))
         .accessibilityElement()
-        .accessibilityLabel(a == b ? "Two rows of \(a)" : "A row of \(a) and a row of \(a) plus one")
-    }
-
-    private func dots(_ n: Int, extra: Bool) -> some View {
-        HStack(spacing: 6) {
-            ForEach(0..<n, id: \.self) { i in
-                let isExtra = extra && i == n - 1
-                Circle().fill(isExtra ? Theme.odd : Theme.even).frame(width: 22, height: 22)
-                    .scaleEffect(isExtra && lit ? 1.3 : (lit ? 1 : 0.6))
-            }
-        }
+        .accessibilityLabel(words.map(\.text).joined(separator: ", "))
     }
 }
 
-/// A number line from `from` to `to`, hopping one at a time.
-struct HopsVisual: View {
-    let from: Int
-    let to: Int
-    @State private var hopped = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        let n = max(to - from, 1)
-        GeometryReader { g in
-            let w = g.size.width - 24
-            let step = w / CGFloat(n)
-            ZStack(alignment: .topLeading) {
-                Path { p in p.move(to: CGPoint(x: 12, y: 70)); p.addLine(to: CGPoint(x: 12 + w, y: 70)) }
-                    .stroke(Theme.border, lineWidth: 3)
-                ForEach(0...n, id: \.self) { k in
-                    let x = 12 + CGFloat(k) * step
-                    Path { p in p.move(to: CGPoint(x: x, y: 62)); p.addLine(to: CGPoint(x: x, y: 78)) }
-                        .stroke(Theme.muted, lineWidth: 2)
-                    if k == 0 || k == n || n <= 10 {
-                        Text(String(from + k)).font(Theme.round(n <= 10 ? 15 : 13, .bold))
-                            .foregroundStyle(k == 0 || k == n ? Theme.text : Theme.muted)
-                            .position(x: x, y: 94)
-                    }
-                }
-                ForEach(0..<hopped, id: \.self) { k in
-                    let x0 = 12 + CGFloat(k) * step
-                    Path { p in
-                        p.move(to: CGPoint(x: x0, y: 62))
-                        p.addQuadCurve(to: CGPoint(x: x0 + step, y: 62), control: CGPoint(x: x0 + step / 2, y: 62 - min(46, step * 0.9)))
-                    }
-                    .stroke(Theme.odd, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                }
-                Text("\(hopped)").font(Theme.round(22)).foregroundStyle(Theme.odd)
-                    .position(x: 12 + CGFloat(hopped) * step, y: 18)
-                    .opacity(hopped > 0 ? 1 : 0)
-            }
-        }
-        .frame(height: 110)
-        .accessibilityElement()
-        .accessibilityLabel("Count up from \(from) to \(to): \(to - from) hops")
-        .task {
-            if reduceMotion { hopped = n; return }
-            for k in 1...n {
-                try? await Task.sleep(for: .milliseconds(k == 1 ? 500 : max(120, 420 - n * 15)))
-                withAnimation(.easeOut(duration: 0.2)) { hopped = k }
-            }
-        }
-    }
-}
-
-/// rows × cols dots, filling in row by row.
-struct ArrayVisual: View {
-    let rows: Int
-    let cols: Int
+/// One chip per syllable, each arriving with a clap.
+struct SyllablesVisual: View {
+    let parts: [String]
+    let picture: String
     @State private var shown = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        let d: CGFloat = cols > 7 || rows > 7 ? 13 : 18
-        VStack(spacing: d * 0.35) {
-            ForEach(0..<rows, id: \.self) { r in
-                HStack(spacing: d * 0.35) {
-                    ForEach(0..<cols, id: \.self) { _ in
-                        Circle().fill(r < shown ? Theme.even : Theme.border).frame(width: d, height: d)
-                    }
-                    Text(r < shown ? "\((r + 1) * cols)" : "")
-                        .font(Theme.round(13, .bold)).foregroundStyle(Theme.muted).frame(width: 30, alignment: .leading)
-                }
-            }
-        }
-        .accessibilityElement()
-        .accessibilityLabel("\(rows) rows of \(cols)")
-        .task {
-            if reduceMotion { shown = rows; return }
-            for r in 1...rows {
-                try? await Task.sleep(for: .milliseconds(r == 1 ? 450 : 260))
-                withAnimation(.easeOut(duration: 0.2)) { shown = r }
-            }
-        }
-    }
-}
-
-/// The ×9 finger trick: fold down finger n; fingers to the left are tens, to the right are ones.
-struct NinesVisual: View {
-    let n: Int
-    @State private var folded = false
-
     var body: some View {
         VStack(spacing: 10) {
-            HStack(alignment: .bottom, spacing: 5) {
-                ForEach(1...10, id: \.self) { k in
-                    let down = folded && k == n
-                    Capsule()
-                        .fill(down ? Theme.odd : (folded && k < n ? Theme.even : (folded ? Theme.right : Theme.muted.opacity(0.5))))
-                        .frame(width: 18, height: down ? 22 : 64)
-                        .padding(.leading, k == 6 ? 10 : 0)
+            Text(picture).font(.system(size: 52))
+            HStack(spacing: 8) {
+                ForEach(Array(parts.enumerated()), id: \.offset) { k, p in
+                    VStack(spacing: 4) {
+                        Text(k < shown ? "👏" : " ").font(.system(size: 26))
+                        Text(p).font(Theme.round(30)).foregroundStyle(k < shown ? Theme.onColor : Theme.muted)
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(k < shown ? Theme.even : Theme.bg, in: Capsule())
+                    }
                 }
-            }
-            .frame(height: 64, alignment: .bottom)
-            if folded {
-                HStack(spacing: 18) {
-                    Label("\(n - 1) tens", systemImage: "hand.raised.fill").foregroundStyle(Theme.even)
-                    Label("\(10 - n) ones", systemImage: "hand.raised.fill").foregroundStyle(Theme.right)
-                }
-                .font(Theme.round(16, .bold))
             }
         }
-        .modifier(Reveal(on: $folded, delay: 0.5))
         .accessibilityElement()
-        .accessibilityLabel("Fold down finger \(n): \(n - 1) fingers before it, \(10 - n) after, so \(9 * n)")
+        .accessibilityLabel(parts.joined(separator: ", ") + ": \(parts.count) claps")
+        .task {
+            if reduceMotion { shown = parts.count; return }
+            for k in 1...parts.count {
+                try? await Task.sleep(for: .milliseconds(k == 1 ? 450 : 550))
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { shown = k }
+                Haptics.tick()
+            }
+        }
     }
 }
 
-/// n dots slide from rows of five into pairs; a leftover glows orange.
-struct PairsVisual: View {
-    let n: Int
-    var dot: CGFloat = 22
-    @State private var paired = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var gap: CGFloat { dot * 0.45 }
-    private var pairColumns: Int { (n + 1) / 2 }
-    private var width: CGFloat { max(CGFloat(pairColumns), 5) * (dot + gap * 1.6) }
-    private var height: CGFloat { max(CGFloat((n + 4) / 5), 2) * (dot + gap) + 8 }
-
+/// Two words slide together and become one.
+struct CompoundVisual: View {
+    let a: String
+    let b: String
+    let word: Word
+    @State private var joined = false
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(0..<pairColumns, id: \.self) { c in
-                if c * 2 + 1 < n {                                  // a whole pair gets a soft capsule
-                    Capsule()
-                        .stroke(Theme.even.opacity(0.6), lineWidth: 2)
-                        .frame(width: dot + 8, height: dot * 2 + gap + 8)
-                        .offset(x: pairX(c) - 4, y: -4)
-                        .opacity(paired ? 1 : 0)
-                }
+        VStack(spacing: 10) {
+            HStack(spacing: joined ? 0 : 18) {
+                Text(a).font(Theme.round(42)).foregroundStyle(Theme.even)
+                if !joined { Text("+").font(Theme.round(36)).foregroundStyle(Theme.muted).transition(.opacity) }
+                Text(b).font(Theme.round(42)).foregroundStyle(Theme.odd)
             }
-            ForEach(0..<n, id: \.self) { i in
-                let leftover = n % 2 == 1 && i == n - 1
-                Circle()
-                    .fill(paired ? (leftover ? Theme.odd : Theme.even) : Theme.muted)
-                    .frame(width: dot, height: dot)
-                    .scaleEffect(paired && leftover ? 1.25 : 1)
-                    .offset(paired ? pairPos(i) : gridPos(i))
-            }
+            .minimumScaleFactor(0.5)
+            Text(word.pic).font(.system(size: 54)).scaleEffect(joined ? 1 : 0.1).opacity(joined ? 1 : 0)
         }
-        .frame(width: width, height: height, alignment: .topLeading)
+        .modifier(Reveal(on: $joined, delay: 0.6))
         .accessibilityElement()
-        .accessibilityLabel(n % 2 == 0 ? "\(n) dots in \(n / 2) pairs, none left over" : "\(n) dots in \(n / 2) pairs and one left over")
-        .onAppear {
-            if reduceMotion { paired = true; return }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5)) { paired = true }
-        }
-    }
-
-    private func gridPos(_ i: Int) -> CGSize {
-        CGSize(width: CGFloat(i % 5) * (dot + gap), height: CGFloat(i / 5) * (dot + gap))
-    }
-    private func pairX(_ c: Int) -> CGFloat { CGFloat(c) * (dot + gap * 1.6) }
-    private func pairPos(_ i: Int) -> CGSize {
-        CGSize(width: pairX(i / 2), height: CGFloat(i % 2) * (dot + gap))
+        .accessibilityLabel("\(a) and \(b) make \(word.text)")
     }
 }
 
-/// Big numbers: light up the last digit, then pair that digit's dots.
-struct LastDigitVisual: View {
-    let n: Int
-    @State private var lit = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
+/// The e hops onto the end; the vowel lights up and says its name.
+struct MagicEVisual: View {
+    let base: String
+    let word: String
+    @State private var on = false
     var body: some View {
-        let digits = Array(String(n))
-        let last = n % 10
-        VStack(spacing: 14) {
-            HStack(spacing: 6) {
-                ForEach(Array(digits.enumerated()), id: \.offset) { k, d in
-                    let isLast = k == digits.count - 1
-                    Text(String(d))
-                        .font(Theme.round(56))
-                        .foregroundStyle(isLast && lit ? Theme.onColor : (isLast ? Theme.text : Theme.muted.opacity(lit ? 0.5 : 1)))
-                        .frame(width: 52, height: 72)
-                        .background(isLast && lit ? (last % 2 == 0 ? Theme.even : Theme.odd) : Color.clear, in: RoundedRectangle(cornerRadius: 16))
-                        .scaleEffect(isLast && lit ? 1.12 : 1)
-                }
-            }
-            if last == 0 {
-                Text("0 dots: nothing left over")
-                    .font(Theme.round(18, .bold))
-                    .foregroundStyle(Theme.muted)
-                    .opacity(lit ? 1 : 0)
-            } else if lit {
-                PairsVisual(n: last, dot: 18)
-            }
+        let vowel = base.firstIndex { "aeiou".contains($0) }.map { base.distance(from: base.startIndex, to: $0) } ?? 0
+        HStack(spacing: 4) {
+            LetterTiles(word: base, lit: on ? [vowel] : [], size: 52, color: Theme.odd)
+            Text("e")
+                .font(Theme.round(52))
+                .foregroundStyle(Theme.star)
+                .offset(y: on ? 0 : -60)
+                .opacity(on ? 1 : 0)
+                .overlay(alignment: .top) { Text("✨").font(.system(size: 20)).offset(y: -26).opacity(on ? 1 : 0) }
         }
+        .modifier(Reveal(on: $on, delay: 0.5))
         .accessibilityElement()
-        .accessibilityLabel("The last digit of \(n) is \(last)")
-        .onAppear {
-            if reduceMotion { lit = true; return }
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.4)) { lit = true }
+        .accessibilityLabel("\(base) plus e makes \(word)")
+    }
+}
+
+/// The sentence with the right word dropped into the blank.
+struct SentenceVisual: View {
+    let sentence: String
+    let word: String
+    let picture: String
+    @State private var on = false
+    var body: some View {
+        let parts = sentence.components(separatedBy: "___")
+        VStack(spacing: 10) {
+            Text(picture).font(.system(size: 48))
+            (Text(parts.first ?? "") + Text(on ? word : "___").foregroundColor(on ? Theme.even : Theme.muted).bold() + Text(parts.count > 1 ? parts[1] : ""))
+                .font(Theme.round(26, .semibold))
+                .foregroundStyle(Theme.text)
+                .multilineTextAlignment(.center)
         }
+        .modifier(Reveal(on: $on, delay: 0.5))
+        .accessibilityElement()
+        .accessibilityLabel(sentence.replacingOccurrences(of: "___", with: word))
     }
 }
 

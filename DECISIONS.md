@@ -642,6 +642,25 @@
       question. The App Review contact lives only in App Store Connect,
       never in this public repo.
 
+* **[2026-10-31] Lingo Sprouts v1: letters, sounds and words (Chad).**
+  Number Sprouts' sibling for reading, on branch `lingo-sprouts-v1` at
+  `ios/LingoSprouts/` (bundle `com.chiarotinkertools.lingosprouts`), built on
+  Number Sprouts' bones. Chad chose the name, all four practice concepts
+  (Sounds, Rhymes, Words, Word tricks: 14 modes), and a creative Story mode
+  (Who / Did / What / Where tiles, read aloud word by word, kept in a story
+  book).
+    * *Speech, politely:* Number Sprouts' read-aloud paused Chad's music, so
+      here it's off until tapped (or a grown-up turns it on), uses
+      `.duckOthers`, and deactivates the audio session when done.
+    * *Pushback:* the built-in voice says letter names, not isolated sounds,
+      so sounds are taught through words ("d, d, dog"). Recorded phonics
+      audio is a later option.
+    * *Pictures can be named two ways* (☕ mug or cup?), so sound cards show
+      the rest of the word ("?og" under 🪵).
+    * *Caught by tests:* the sound-alike list was missing ate/eight and
+      sun/son. "Hear and find" must never offer a word that sounds like the
+      target.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow

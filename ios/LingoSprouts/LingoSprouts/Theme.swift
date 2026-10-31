@@ -1,7 +1,7 @@
 //  Theme.swift — bright, calm, rounded. Follows the phone's light/dark setting.
 //
-//  Even is blue and Odd is orange everywhere: a pair that stays apart for
-//  colour-blind eyes too, and each always comes with its word and its picture.
+//  Shared with Number Sprouts. Blue ("even") lights the letters that matter;
+//  orange ("odd") marks the one that's different.
 
 import SwiftUI
 import UIKit

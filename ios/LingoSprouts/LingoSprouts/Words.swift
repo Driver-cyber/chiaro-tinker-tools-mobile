@@ -63,7 +63,8 @@ enum Words {
 
     /// Words that sound the same; never offered side by side when the kid is listening.
     static let homophones: [Set<String>] = [["to", "two", "too"], ["there", "their", "they're"], ["one", "won"],
-                                            ["no", "know"], ["see", "sea"], ["for", "four"], ["here", "hear"]]
+                                            ["no", "know"], ["see", "sea"], ["for", "four"], ["here", "hear"],
+                                            ["ate", "eight"], ["sun", "son"]]
 
     static func soundsSame(_ a: String, _ b: String) -> Bool {
         a == b || homophones.contains { $0.contains(a) && $0.contains(b) }

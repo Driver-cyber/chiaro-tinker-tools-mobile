@@ -1,9 +1,9 @@
 //  PlayView.swift — the card loop, for every card deck.
 //
-//  A card flies in and pops. Answer it the deck's way: drag into the Even or
-//  Odd basket, tap the bigger side (the alligator chomps it), or pick one of
-//  four. Right: a green glow and a star burst. Miss: a gentle shake, then the
-//  Trick card, then one retry. Ten cards, then the stars.
+//  A card flies in and pops. Answer it by picking (a letter, a word or a
+//  picture) or by spelling with letter tiles. Right: a green glow and a star
+//  burst. Miss: a gentle shake, then the Trick card, then one retry. The 🔊
+//  button reads the card; with "Read aloud" on, cards read themselves.
 
 import SwiftUI
 
@@ -17,8 +17,10 @@ struct PlayView: View {
             switch mode.play {
             case .cards(let deal):
                 RoundView(mode: mode, cards: deal()) { roundKey += 1 }.id(roundKey)
-            case .draw(let kind):
-                DrawView(mode: mode, kind: kind)
+            case .storyBuild:
+                StoryBuilder()
+            case .storyBook:
+                StoryBook()
             }
         }
     }
@@ -31,13 +33,9 @@ struct RoundView: View {
     let again: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var drag: CGSize = .zero
-    @State private var dropped = false
-    @State private var hover: Int?                  // which basket the card is over
-    @State private var baskets: [Int: CGRect] = [:]
-    @State private var cardFrame: CGRect = .zero
     @State private var shakes: CGFloat = 0
     @State private var bursts = 0
+    @State private var typed: [Int] = []          // indices into the spelling tiles
 
     init(mode: Mode, cards: [Card], again: @escaping () -> Void) {
         _round = StateObject(wrappedValue: Round(modeID: mode.id, cards: cards))
@@ -50,25 +48,23 @@ struct RoundView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done,
-                   speech: round.card.speech) { model.screen = .home }
+            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done) {
+                Reader.shared.say(round.card.speech)
+            } close: { Reader.shared.stop(); model.screen = .home }
             switch round.card.face {
-            case .parity(let n, let dots): parityArea(n, dots)
-            case .compare(let a, let b): compareArea(a, b)
-            case .choice(let prompt, let options): choiceArea(prompt, options)
+            case .choice(let picture, let prompt, let options, let listen): choiceArea(picture, prompt, options, listen)
+            case .spell(let picture, let word, let tiles): spellArea(picture, word, tiles)
             }
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 16)
-        .coordinateSpace(name: "play")
-        .onPreferenceChange(BasketFrames.self) { baskets = $0 }
-        .overlay {
-            if !reduceMotion { Burst(trigger: bursts).allowsHitTesting(false) }
-        }
+        .overlay { if !reduceMotion { Burst(trigger: bursts).allowsHitTesting(false) } }
         .overlay {
             if round.phase == .missed {
-                TrickOverlay(trick: round.card.trick) { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { round.gotIt(); reset() } }
-                    .transition(.opacity)
+                TrickOverlay(trick: round.card.trick, readAloud: model.readAloud) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { round.gotIt(); typed = [] }
+                }
+                .transition(.opacity)
             }
         }
         .overlay {
@@ -78,16 +74,23 @@ struct RoundView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: round.phase)
+        .onAppear { autoRead() }
+        .onChange(of: round.index) { _, _ in autoRead() }
         .onChange(of: round.phase) { _, phase in
             if phase == .right {
                 bursts += 1
                 Task {
                     try? await Task.sleep(for: .milliseconds(reduceMotion ? 700 : 1000))
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { round.advance(); reset() }
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { round.advance(); typed = [] }
                 }
             }
             if phase == .done { model.recordRound(mode: mode.id, stars: round.stars) }
         }
+    }
+
+    private func autoRead() {
+        guard model.readAloud, round.phase != .done else { return }
+        Reader.shared.say(round.card.speech)
     }
 
     private var hint: String {
@@ -95,11 +98,8 @@ struct RoundView: View {
         case .retrying: return "One more try!"
         case .right: return ["Yes!", "You got it!", "Nice!", "Super!"][round.index % 4]
         default:
-            switch round.card.face {
-            case .parity: return "Drag the card into a basket"
-            case .compare: return "Tap the bigger number"
-            case .choice: return "Pick the answer"
-            }
+            if case .spell = round.card.face { return "Tap the letters in order" }
+            return "Pick the answer"
         }
     }
 
@@ -112,136 +112,19 @@ struct RoundView: View {
 
     private func pick(_ i: Int) {
         guard answering else { return }
-        if !round.answer(i) {
-            withAnimation(.linear(duration: 0.45)) { shakes += 1 }
-        }
+        if !round.answer(i) { withAnimation(.linear(duration: 0.45)) { shakes += 1 } }
     }
 
-    private func reset() {
-        drag = .zero
-        dropped = false
-        hover = nil
-    }
+    // MARK: Choices
 
-    // MARK: Even or Odd: drag into a basket
-
-    private func parityArea(_ n: Int, _ dots: Bool) -> some View {
+    private func choiceArea(_ picture: String, _ prompt: String, _ options: [String], _ listen: Bool) -> some View {
         VStack(spacing: 0) {
             Spacer(minLength: 12)
-            NumberCard(n: n, dots: dots, glowing: answered)
+            PromptCard(picture: picture, prompt: prompt, listen: listen, glowing: answered) { Reader.shared.say(round.card.speech) }
                 .id(round.index)
                 .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-                .background(GeometryReader { g in Color.clear.onAppear { cardFrame = g.frame(in: .named("play")) } })
-                .modifier(Shake(amount: reduceMotion ? 0 : 12, animatableData: shakes))
-                .scaleEffect(dropped ? 0.25 : (drag == .zero ? 1 : 1.05))
-                .opacity(dropped ? 0 : 1)
-                .offset(drag)
-                .gesture(dragGesture)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Number \(n)")
-            hintView.padding(.top, 18)
-            Spacer(minLength: 12)
-            HStack(spacing: 16) {
-                basket(0)
-                basket(1)
-            }
-        }
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture(coordinateSpace: .named("play"))
-            .onChanged { v in
-                guard answering else { return }
-                drag = v.translation
-                let over = basketAt(v.location)
-                if over != hover { hover = over; if over != nil { Haptics.tick() } }
-            }
-            .onEnded { v in
-                guard answering else { return }
-                if let b = basketAt(v.location) { dropInto(b) } else {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { drag = .zero }
-                }
-                hover = nil
-            }
-    }
-
-    private func basketAt(_ p: CGPoint) -> Int? {
-        for (i, r) in baskets where r.insetBy(dx: -12, dy: -24).contains(p) { return i }
-        return nil
-    }
-
-    private func dropInto(_ b: Int) {
-        guard answering else { return }
-        if round.answer(b) {
-            let target = baskets[b] ?? .zero
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
-                drag = CGSize(width: target.midX - cardFrame.midX, height: target.midY - cardFrame.midY)
-                dropped = true
-            }
-        } else {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { drag = .zero }
-            withAnimation(.linear(duration: 0.45)) { shakes += 1 }
-        }
-    }
-
-    private func basket(_ i: Int) -> some View {
-        Button { dropInto(i) } label: { BasketView(even: i == 0, highlighted: hover == i) }
-            .buttonStyle(.plain)
-            .background(GeometryReader { g in Color.clear.preference(key: BasketFrames.self, value: [i: g.frame(in: .named("play"))]) })
-            .accessibilityLabel(i == 0 ? "Even" : "Odd")
-            .disabled(!answering)
-    }
-
-    // MARK: Bigger or Smaller: tap the bigger side
-
-    private func compareArea(_ a: Int, _ b: Int) -> some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 12)
-            HStack(spacing: 10) {
-                compareTile(a, side: 0)
-                Mouth(opensToward: answered ? round.card.answer : nil)
-                    .frame(width: 64, height: 64)
-                compareTile(b, side: 1)
-            }
-            .id(round.index)
-            .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-            hintView.padding(.top, 22)
-            Spacer(minLength: 12)
-        }
-    }
-
-    private func compareTile(_ n: Int, side: Int) -> some View {
-        let isAnswer = side == round.card.answer
-        let wrong = round.wrongPicks.contains(side)
-        return Button { pick(side) } label: {
-            Text(String(n))
-                .font(Theme.round(n >= 100 ? 52 : 64))
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
-                .foregroundStyle(Theme.text)
-                .frame(maxWidth: .infinity, minHeight: 170)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 30))
-                .overlay(RoundedRectangle(cornerRadius: 30).stroke(answered && isAnswer ? Theme.right : Theme.border, lineWidth: answered && isAnswer ? 5 : 2))
-                .shadow(color: answered && isAnswer ? Theme.right.opacity(0.5) : .black.opacity(0.06), radius: answered && isAnswer ? 18 : 8)
-                .opacity(wrong && round.phase == .retrying ? 0.45 : 1)
-                .modifier(Shake(amount: reduceMotion || !wrong ? 0 : 10, animatableData: shakes))
-        }
-        .buttonStyle(.plain)
-        .disabled(!answering)
-        .accessibilityLabel("\(n)")
-    }
-
-    // MARK: Four choices
-
-    private func choiceArea(_ prompt: String, _ options: [String]) -> some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 12)
-            PromptCard(prompt: prompt, glowing: answered)
-                .id(round.index)
-                .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Question \(prompt)")
-            hintView.padding(.top, 16)
+                .modifier(Shake(amount: reduceMotion ? 0 : 10, animatableData: shakes))
+            hintView.padding(.top, 14)
             Spacer(minLength: 12)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
                 ForEach(Array(options.enumerated()), id: \.offset) { i, text in choiceButton(i, text) }
@@ -252,21 +135,87 @@ struct RoundView: View {
     private func choiceButton(_ i: Int, _ text: String) -> some View {
         let right = answered && i == round.card.answer
         let wrong = round.wrongPicks.contains(i)
+        let pictureOnly = text.unicodeScalars.allSatisfy { $0.properties.isEmojiPresentation || $0.properties.isEmoji || $0.value == 0xFE0F || $0.value == 0x20E3 }
         return Button { pick(i) } label: {
             Text(text)
-                .font(Theme.round(text.count > 5 ? 28 : 38))
-                .minimumScaleFactor(0.6)
+                .font(pictureOnly ? .system(size: 56) : Theme.round(text.count <= 2 ? 44 : (text.count <= 6 ? 32 : 24)))
+                .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .foregroundStyle(right ? Theme.onColor : Theme.text)
+                .padding(.horizontal, 8)
                 .frame(maxWidth: .infinity, minHeight: 88)
                 .background(right ? Theme.right : Theme.card, in: RoundedRectangle(cornerRadius: 24))
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(wrong ? Theme.odd : Theme.border, lineWidth: 2))
                 .opacity(wrong && round.phase == .retrying ? 0.4 : 1)
-                .modifier(Shake(amount: reduceMotion || !wrong ? 0 : 10, animatableData: shakes))
         }
         .buttonStyle(.plain)
         .disabled(!answering || (wrong && round.phase == .retrying))
         .accessibilityLabel(text)
+    }
+
+    // MARK: Spelling
+
+    private func spellArea(_ picture: String, _ word: String, _ tiles: [String]) -> some View {
+        let letters = word.map(String.init)
+        return VStack(spacing: 0) {
+            Spacer(minLength: 12)
+            VStack(spacing: 16) {
+                Text(picture).font(.system(size: 96)).accessibilityLabel("Spell the word for this picture")
+                HStack(spacing: 10) {
+                    ForEach(0..<letters.count, id: \.self) { k in
+                        let t = k < typed.count ? tiles[typed[k]] : ""
+                        Text(t)
+                            .font(Theme.round(40))
+                            .foregroundStyle(Theme.text)
+                            .frame(width: 58, height: 68)
+                            .background(Theme.bg, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(k == typed.count ? Theme.sprout : Theme.border, lineWidth: k == typed.count ? 3 : 2))
+                    }
+                }
+                .accessibilityElement()
+                .accessibilityLabel("Spelled so far: \(typed.map { tiles[$0] }.joined())")
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+            .modifier(CardChrome(glowing: answered))
+            .id(round.index)
+            .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+            .modifier(Shake(amount: reduceMotion ? 0 : 10, animatableData: shakes))
+            hintView.padding(.top, 14)
+            Spacer(minLength: 12)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                ForEach(Array(tiles.enumerated()), id: \.offset) { i, t in
+                    let used = typed.contains(i)
+                    Button { tap(i, letters: letters, tiles: tiles) } label: {
+                        Text(t)
+                            .font(Theme.round(38))
+                            .foregroundStyle(Theme.text)
+                            .frame(maxWidth: .infinity, minHeight: 72)
+                            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20))
+                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.border, lineWidth: 2))
+                            .opacity(used ? 0.25 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(used || !answering)
+                    .accessibilityLabel(t)
+                }
+            }
+            Button { if !typed.isEmpty { typed.removeLast(); Haptics.tick() } } label: { Label("Back", systemImage: "delete.left") }
+                .buttonStyle(SoftButtonStyle())
+                .padding(.top, 12)
+                .disabled(typed.isEmpty || !answering)
+        }
+    }
+
+    private func tap(_ i: Int, letters: [String], tiles: [String]) {
+        guard answering, typed.count < letters.count else { return }
+        typed.append(i)
+        Haptics.tick()
+        guard typed.count == letters.count else { return }
+        let right = typed.map { tiles[$0] } == letters
+        if !round.answer(right ? 0 : -1) {
+            withAnimation(.linear(duration: 0.45)) { shakes += 1 }
+        }
     }
 }
 
@@ -276,14 +225,14 @@ struct TopBar: View {
     let count: Int
     let index: Int
     let done: Bool
-    let speech: String
+    let read: () -> Void
     let close: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
             CircleButton(symbol: "xmark", label: "Stop playing", action: close)
             ProgressDots(count: count, index: index, done: done)
-            CircleButton(symbol: "speaker.wave.2.fill", label: "Read the question") { Speech.say(speech) }
+            CircleButton(symbol: "speaker.wave.2.fill", label: "Read the card", action: read)
             PlayerBadge()
         }
         .padding(.top, 8)
@@ -305,95 +254,47 @@ struct CircleButton: View {
     }
 }
 
-private struct BasketFrames: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue()) { $1 }
-    }
-}
-
-struct BasketView: View {
-    let even: Bool
-    let highlighted: Bool
-
-    var body: some View {
-        let color = even ? Theme.even : Theme.odd
-        VStack(spacing: 8) {
-            Image(systemName: "basket.fill")
-                .font(.system(size: 44, weight: .bold))
-                .foregroundStyle(color)
-            Text(even ? "Even" : "Odd")
-                .font(Theme.round(28))
-                .foregroundStyle(Theme.text)
-            HStack(spacing: 4) {                      // even: pairs only; odd: pairs and one left over
-                ForEach(0..<(even ? 4 : 5), id: \.self) { i in
-                    Circle().fill(color.opacity(i == 4 ? 1 : 0.55)).frame(width: 9, height: 9)
-                        .padding(.leading, i % 2 == 0 && i > 0 ? 5 : 0)
-                }
-            }
-            .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity, minHeight: 156)
-        .background(color.opacity(highlighted ? 0.26 : 0.12), in: RoundedRectangle(cornerRadius: 30))
-        .overlay(RoundedRectangle(cornerRadius: 30).stroke(color, lineWidth: highlighted ? 5 : 2.5))
-        .scaleEffect(highlighted ? 1.05 : 1)
-        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: highlighted)
-    }
-}
-
-struct NumberCard: View {
-    let n: Int
-    let dots: Bool
+/// The question: a picture, the prompt, and for listening cards a big 🔊.
+struct PromptCard: View {
+    let picture: String
+    let prompt: String
+    let listen: Bool
     let glowing: Bool
+    let read: () -> Void
     @State private var popped = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: 14) {
-            Text(String(n))
-                .font(Theme.round(n >= 100 ? 96 : 120))
-                .foregroundStyle(Theme.text)
+        VStack(spacing: 12) {
+            if listen {
+                Button(action: read) {
+                    Image(systemName: "speaker.wave.3.fill")
+                        .font(.system(size: 54, weight: .bold))
+                        .foregroundStyle(Theme.onColor)
+                        .frame(width: 120, height: 120)
+                        .background(Theme.even, in: Circle())
+                }
+                .accessibilityLabel("Hear the word")
+            } else if !picture.isEmpty {
+                Text(picture).font(.system(size: 88)).accessibilityHidden(true)
+            }
+            Text(prompt)
+                .font(Theme.round(listen ? 22 : (prompt.count > 14 ? 30 : 48)))
+                .foregroundStyle(listen ? Theme.muted : Theme.text)
+                .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.5)
-                .lineLimit(1)
-                .scaleEffect(popped ? 1 : 0.55)
-            if dots { DotGrid(n: n, color: Theme.muted) }
+                .lineLimit(2)
         }
+        .scaleEffect(popped ? 1 : 0.6)
         .padding(.vertical, 26)
-        .padding(.horizontal, 22)
-        .frame(width: 260)
-        .frame(minHeight: dots ? 280 : 220)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, minHeight: 230)
         .modifier(CardChrome(glowing: glowing))
         .onAppear {
             if reduceMotion { popped = true } else {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.5).delay(0.1)) { popped = true }
             }
         }
-    }
-}
-
-/// The question for a four-choice card: "8 + 5", "? × ? = 24".
-struct PromptCard: View {
-    let prompt: String
-    let glowing: Bool
-    @State private var popped = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Text(prompt)
-            .font(Theme.round(prompt.count > 7 ? 56 : 76))
-            .foregroundStyle(Theme.text)
-            .minimumScaleFactor(0.5)
-            .lineLimit(1)
-            .scaleEffect(popped ? 1 : 0.55)
-            .padding(.vertical, 40)
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity, minHeight: 200)
-            .modifier(CardChrome(glowing: glowing))
-            .onAppear {
-                if reduceMotion { popped = true } else {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.5).delay(0.1)) { popped = true }
-                }
-            }
     }
 }
 
@@ -405,62 +306,6 @@ struct CardChrome: ViewModifier {
             .overlay(RoundedRectangle(cornerRadius: 34).stroke(glowing ? Theme.right : Theme.border, lineWidth: glowing ? 5 : 2))
             .shadow(color: glowing ? Theme.right.opacity(0.55) : .black.opacity(0.08), radius: glowing ? 22 : 10, y: glowing ? 0 : 6)
             .animation(.easeOut(duration: 0.2), value: glowing)
-    }
-}
-
-/// The alligator mouth, built from two jaws. Before the answer it waits with a
-/// "?"; on a right answer it swings open toward the bigger number and chomps,
-/// becoming the > or < sign.
-struct Mouth: View {
-    let opensToward: Int?           // 0: left is bigger (">"), 1: right is bigger ("<")
-    @State private var chomp = false
-
-    var body: some View {
-        ZStack {
-            if let side = opensToward {
-                Jaws()
-                    .stroke(Theme.right, style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
-                    .scaleEffect(x: side == 0 ? 1 : -1, y: chomp ? 0.7 : 1)
-                    .accessibilityLabel(side == 0 ? "greater than" : "less than")
-                    .transition(.scale.combined(with: .opacity))
-            } else {
-                Text("?")
-                    .font(Theme.round(34))
-                    .foregroundStyle(Theme.muted)
-                    .frame(width: 56, height: 56)
-                    .background(Theme.card, in: Circle())
-                    .overlay(Circle().stroke(Theme.border, lineWidth: 2))
-            }
-        }
-        .animation(.spring(response: 0.3, dampingFraction: 0.45), value: opensToward)
-        .onChange(of: opensToward) { _, v in
-            guard v != nil else { chomp = false; return }
-            withAnimation(.easeInOut(duration: 0.14).repeatCount(3, autoreverses: true)) { chomp = true }
-        }
-    }
-}
-
-/// ">" drawn as two jaws: open on the left, the point on the right.
-struct Jaws: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: r.minX + 6, y: r.minY + 6))
-        p.addLine(to: CGPoint(x: r.maxX - 8, y: r.midY))
-        p.addLine(to: CGPoint(x: r.minX + 6, y: r.maxY - 6))
-        return p
-    }
-}
-
-/// Dots in rows of five, like a ten-frame: countable, but they don't give the pairs away.
-struct DotGrid: View {
-    let n: Int
-    let color: Color
-    var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(26), spacing: 8), count: 5), spacing: 8) {
-            ForEach(0..<n, id: \.self) { _ in Circle().fill(color).frame(width: 24, height: 24) }
-        }
-        .frame(width: 5 * 26 + 4 * 8)
-        .accessibilityHidden(true)
     }
 }
 

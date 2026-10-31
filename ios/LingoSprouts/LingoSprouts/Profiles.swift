@@ -1,7 +1,7 @@
 //  Profiles.swift — who's playing, and what each kid has earned.
 //
-//  One profile per kid. Each keeps its own stars (per mode) and finished
-//  pictures, so the kids' progress never mixes. Everything lives in
+//  One profile per kid. Each keeps its own stars (per mode) and story book,
+//  so the kids' progress never mixes. Everything lives in
 //  UserDefaults on this phone as one small JSON blob; nothing is sent anywhere.
 
 import Foundation
@@ -15,7 +15,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var color: Int = 0            // index into Theme.tileColors
     var stars: [String: Int] = [:]          // mode id → stars earned, all rounds
     var rounds: [String: Int] = [:]         // mode id → rounds finished
-    var pictures: Set<String> = []          // finished Draw pictures, "dr.steps/boat"
+    var stories: [String] = []              // the story book, newest last
     var lastMode: String?
 
     init(id: UUID = UUID(), name: String, icon: String, isSymbol: Bool = false, color: Int = 0) {
@@ -32,7 +32,7 @@ struct Profile: Codable, Identifiable, Equatable {
         color = try c.decodeIfPresent(Int.self, forKey: .color) ?? 0
         stars = try c.decodeIfPresent([String: Int].self, forKey: .stars) ?? [:]
         rounds = try c.decodeIfPresent([String: Int].self, forKey: .rounds) ?? [:]
-        pictures = try c.decodeIfPresent(Set<String>.self, forKey: .pictures) ?? []
+        stories = try c.decodeIfPresent([String].self, forKey: .stories) ?? []
         lastMode = try c.decodeIfPresent(String.self, forKey: .lastMode)
     }
 }
@@ -44,11 +44,16 @@ final class AppModel: ObservableObject {
     @Published var currentID: UUID?
     @Published var screen: Screen = .who
 
-    static let storeKey = "ns.profiles.v1"
+    static let storeKey = "ls.profiles.v1"
+    /// Read cards aloud as they appear. Off by default: the speaker button always works.
+    @Published var readAloud: Bool {
+        didSet { store.set(readAloud, forKey: "ls.readAloud") }
+    }
     private let store: UserDefaults
 
     init(store: UserDefaults = .standard) {
         self.store = store
+        readAloud = store.bool(forKey: "ls.readAloud")
         load()
     }
 
@@ -84,8 +89,12 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func recordPicture(_ key: String) {
-        update { $0.pictures.insert(key) }
+    func saveStory(_ s: String) {
+        update {
+            $0.stories.removeAll { $0 == s }
+            $0.stories.append(s)
+            if $0.stories.count > 30 { $0.stories.removeFirst() }
+        }
     }
 
     private func update(_ change: (inout Profile) -> Void) {

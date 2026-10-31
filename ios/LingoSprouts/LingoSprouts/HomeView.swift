@@ -1,8 +1,8 @@
 //  HomeView.swift — pick a concept at the top, then a mode, and play.
 //
-//  Concepts (Even or Odd, Bigger or Smaller, Add & Subtract, Times Tables) sit
-//  in a row at the top. Under the chosen one, its modes are named by the skill
-//  they practise ("Pair the dots", "Last digit"), each with its own stars, so a
+//  Concepts (Sounds, Rhymes, Words, Word tricks, Story) sit in a row at the
+//  top. Under the chosen one, its modes are named by the skill they practise
+//  ("First sound", "Magic e"), each with its own stars, so a
 //  kid who has one skill down goes straight to the next instead of wading
 //  through random easy cards. The list itself lives in Modes.swift.
 
@@ -14,15 +14,17 @@ struct HomeView: View {
 
     /// Reopens on the concept of the last mode played, so Stop or Done comes back to where the kid was.
     private var concept: Concept {
-        picked ?? model.current?.lastMode.flatMap { Modes.mode($0)?.concept } ?? .evenOdd
+        picked ?? model.current?.lastMode.flatMap { Modes.mode($0)?.concept } ?? .sounds
     }
 
-    /// Stars for card modes; finished pictures for Draw.
+    /// Stars for card modes; the story count for Story.
     private func progress(_ mode: Mode, _ p: Profile?) -> (symbol: String, text: String, lit: Bool) {
-        if case .draw(let kind) = mode.play {
-            guard kind != .explore else { return ("scribble", "Free play", false) }
-            let done = p?.pictures.filter { $0.hasPrefix(mode.id + "/") }.count ?? 0
-            return ("photo.fill", "\(done) of \(Pictures.count(kind)) pictures", done > 0)
+        switch mode.play {
+        case .storyBuild: return ("sparkles", "Make one up", false)
+        case .storyBook:
+            let n = p?.stories.count ?? 0
+            return ("book.fill", "\(n) \(n == 1 ? "story" : "stories")", n > 0)
+        case .cards: break
         }
         let stars = p?.stars[mode.id] ?? 0
         return ("star.fill", "\(stars)", stars > 0)
@@ -38,6 +40,16 @@ struct HomeView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 Spacer()
+                Button { model.readAloud.toggle(); Haptics.tick() } label: {
+                    Image(systemName: model.readAloud ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(model.readAloud ? Theme.onColor : Theme.muted)
+                        .frame(width: 52, height: 52)
+                        .background(model.readAloud ? Theme.even : Theme.card, in: Circle())
+                        .overlay(Circle().stroke(Theme.border, lineWidth: 2))
+                }
+                .accessibilityLabel(model.readAloud ? "Read aloud is on" : "Read aloud is off")
+                .accessibilityHint("Reads each card out loud as it appears")
                 PlayerBadge()
             }
             ConceptBar(selection: Binding(get: { concept }, set: { picked = $0 }))

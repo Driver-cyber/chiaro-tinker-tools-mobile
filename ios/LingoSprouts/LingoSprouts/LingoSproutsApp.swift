@@ -1,6 +1,6 @@
-//  LingoSproutsApp.swift — Number Sprouts: math flash cards for Chad's kids.
-//  Offline, ad-free, nothing collected. One card at a time, and every miss
-//  shows the trick.
+//  LingoSproutsApp.swift — Lingo Sprouts: letters, sounds and words for Chad's
+//  kids. Number Sprouts' sibling. Offline, ad-free, nothing collected. One card
+//  at a time, every miss shows the trick, and a story builder to make things.
 
 import SwiftUI
 

@@ -1,7 +1,8 @@
 //  Round.swift — the card every deck deals, and one round of ten.
 //
-//  A Card knows how it's asked (baskets, two sides, or four choices), which
-//  answer is right, what to say aloud, and its trick. A round: a right answer
+//  A Card is asked one of two ways: pick from a few choices (letters, words or
+//  pictures), or spell a word with letter tiles. It knows its right answer,
+//  what the speaker button says, and its trick. A round: a right answer
 //  celebrates and moves on; a miss always opens the Trick card, then the same
 //  card comes back for one retry; a second miss shows the trick again and
 //  moves on. Stars count first-try answers only. No lives, no timer.
@@ -11,31 +12,31 @@ import UIKit
 
 struct Card: Equatable {
     enum Face: Equatable {
-        case parity(n: Int, dots: Bool)          // drag into Even (0) or Odd (1)
-        case compare(Int, Int)                   // tap the bigger: left (0) or right (1)
-        case choice(prompt: String, options: [String])   // pick one of four
+        /// `listen`: the question is a word to hear (sight words), so the
+        /// speaker button is the main event rather than a helper.
+        case choice(picture: String, prompt: String, options: [String], listen: Bool)
+        case spell(picture: String, word: String, tiles: [String])
     }
     let face: Face
-    let answer: Int
-    let speech: String
+    let answer: Int            // index of the right option; 0 for spell
+    let speech: String         // what the speaker button says
     let trick: Trick
 }
 
 struct Trick: Equatable {
-    let headline: String       // "8 + 5 = 13"
-    let sentence: String       // one short sentence, read aloud too
+    let headline: String       // "dog starts with d"
+    let sentence: String       // one short sentence
     let visual: TrickVisual
 }
 
 enum TrickVisual: Equatable {
-    case pairs(Int)                    // dots slide into pairs
-    case lastDigit(Int)                // the last digit lights up
-    case placeValue(Int, Int)          // hundreds, tens and ones blocks for two numbers
-    case tenFrame(Int, Int)            // fill a ten, then the rest
-    case doubles(Int, Int)             // two rows that match, plus one
-    case hops(from: Int, to: Int)      // count up along a number line
-    case array(Int, Int)               // rows × columns of dots, filling row by row
-    case nines(Int)                    // ten fingers, one folded down
+    case letters(word: String, picture: String, lit: [Int])   // the word, some letters glowing
+    case blend(letters: [String], word: String, picture: String)
+    case rhyme(words: [Word], ending: String)                  // a family, endings glowing
+    case syllables([String], picture: String)                  // one clap per part
+    case compound(String, String, Word)                        // two words slide together
+    case magicE(base: String, word: String)                    // the e jumps on
+    case sentence(String, word: String, picture: String)       // the right word in its sentence
 }
 
 final class Round: ObservableObject {
@@ -66,6 +67,7 @@ final class Round: ObservableObject {
     }
 
     /// Returns whether the pick was right; ignored unless a card is waiting.
+    /// A wrong spelling answers with -1.
     @discardableResult
     func answer(_ pick: Int) -> Bool {
         guard phase == .asking || phase == .retrying else { return false }
@@ -76,7 +78,7 @@ final class Round: ObservableObject {
             return true
         }
         missedThis = true
-        wrongPicks.insert(pick)
+        if pick >= 0 { wrongPicks.insert(pick) }
         phase = .missed
         Haptics.miss()
         return false
@@ -98,32 +100,27 @@ final class Round: ObservableObject {
     }
 }
 
-/// Deal a round from a one-card dealer: ten cards, never the same card twice in a row.
 enum Dealer {
+    /// Ten cards, never the same question twice in a row (choices get shuffled,
+    /// so the headline is what tells two cards apart).
     static func round<G: RandomNumberGenerator>(count: Int = 10, using rng: inout G, _ deal: (inout G) -> Card) -> [Card] {
         var out: [Card] = []
         while out.count < count {
             let c = deal(&rng)
-            if c.face != out.last?.face { out.append(c) }
+            if c.trick.headline != out.last?.trick.headline { out.append(c) }
         }
         return out
     }
 
-    /// Four choices: the answer plus three plausible wrong ones (off by one, off
-    /// by ten, the wrong operation, the neighbouring fact), never negative and
-    /// never repeated. Returns the options as text and where the answer landed.
-    static func choices<G: RandomNumberGenerator>(answer: Int, near: [Int], using rng: inout G) -> (options: [String], index: Int) {
-        var pool: [Int] = []
-        for n in near.shuffled(using: &rng) where n >= 0 && n != answer && !pool.contains(n) { pool.append(n) }
-        var step = 1
-        while pool.count < 3 {                               // pad with close numbers if the plausible ones ran out
-            for n in [answer + step, answer - step] where n >= 0 && n != answer && !pool.contains(n) && pool.count < 3 { pool.append(n) }
-            step += 1
-        }
-        var nums = Array(pool.prefix(3))
-        let at = Int.random(in: 0...3, using: &rng)
-        nums.insert(answer, at: at)
-        return (nums.map(String.init), at)
+    /// The answer plus up to `count - 1` distinct wrong choices from `near`
+    /// (in order of preference, shuffled within), placed at a random spot.
+    static func choices<G: RandomNumberGenerator>(answer: String, near: [String], count: Int = 4, using rng: inout G) -> (options: [String], index: Int) {
+        var pool: [String] = []
+        for o in near where o != answer && !pool.contains(o) { pool.append(o) }
+        var picked = Array(pool.prefix(count - 1)).shuffled(using: &rng)
+        let at = Int.random(in: 0...picked.count, using: &rng)
+        picked.insert(answer, at: at)
+        return (picked, at)
     }
 }
 
