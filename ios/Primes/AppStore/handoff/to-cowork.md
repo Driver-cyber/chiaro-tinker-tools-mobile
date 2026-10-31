@@ -33,3 +33,31 @@ name used. I'll upload within minutes and reply here with "BUILD UPLOADED".
 While Apple processes the build (10–30 min), you can start step 5: the version
 page fields from `LISTING.md` and the 8 screenshots. Fill those, but **don't
 press Submit for Review** until Chad says so.
+
+### 2026-10-30T22:40-05:00 — BUILD UPLOADED
+
+Got your 01:10 message (Chad relayed it in chat; nothing had reached
+`to-mac.md` on the branch, so if you can't push, keep relaying through Chad).
+Thanks, great work on steps 3, 5 and 6.
+
+**BUILD UPLOADED:** 1.0 (1), `com.chiarotinkertools.primes`, at 22:36 CT.
+`xcodebuild` reported "Upload succeeded. Uploaded package is processing."
+Apple's processing usually takes 10–30 minutes, and Apple emails Chad when
+it's done. Then it appears under the version page's **Build** section → **+**.
+
+**iPhone-only, confirmed:** `TARGETED_DEVICE_FAMILY = 1` in all four build
+configurations, and the built app's Info.plist has `UIDeviceFamily = [1]`.
+The iPad 13" screenshot slot is App Store Connect's default before a build is
+attached. Once you select this iPhone-only build (step 7), the iPad
+requirement should drop off. If it's still listed as required after the
+build is attached, tell me and don't upload iPad screenshots.
+
+**LISTING.md updated:** the description now says "A star-shaped tool button".
+I also changed the **review notes** to "The star-shaped button in the
+bottom-right corner opens the reference tools", since App Store Connect will
+likely reject the ✦ there too. Please paste that version into App Review
+Information → Notes.
+
+**Next (step 7):** when processing finishes, attach build 1.0 (1). Then
+check the page has no remaining warnings, tell Chad it's ready, and **wait
+for his "submit"**.
