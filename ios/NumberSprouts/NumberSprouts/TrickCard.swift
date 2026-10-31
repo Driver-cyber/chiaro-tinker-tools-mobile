@@ -35,7 +35,6 @@ struct TrickOverlay: View {
             .padding(12)
             .transition(.move(edge: .bottom))
         }
-        .onAppear { Speech.say(trick.sentence) }
     }
 }
 
@@ -251,8 +250,15 @@ struct ArrayVisual: View {
             }
         }
         .accessibilityElement()
-        .accessibilityLabel("\(rows) rows of \(cols)")
+        .frame(minWidth: rows == 0 ? 240 : nil, minHeight: rows == 0 ? 60 : nil)
+        .overlay {
+            if rows == 0 {
+                Text("0 groups of \(cols) is 0").font(Theme.round(24)).foregroundStyle(Theme.muted)
+            }
+        }
+        .accessibilityLabel(rows == 0 ? "No groups, so nothing" : "\(rows) rows of \(cols)")
         .task {
+            guard rows > 0 else { return }
             if reduceMotion { shown = rows; return }
             for r in 1...rows {
                 try? await Task.sleep(for: .milliseconds(r == 1 ? 450 : 260))

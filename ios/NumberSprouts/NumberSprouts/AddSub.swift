@@ -1,6 +1,6 @@
 //  AddSub.swift — Add & Subtract: four choices.
 //
-//  Modes: Make 10 (8 + 5 → 8 + 2 + 3), Doubles (6 + 6, 6 + 7), Within 20 (add
+//  Modes: +1 and +2 (the next number, two hops), Make 10 (8 + 5 → 8 + 2 + 3), Doubles (6 + 6, 6 + 7), Within 20 (add
 //  and take away), Missing number (7 + ? = 12), Two-digit (no regrouping).
 //  Wrong choices are the mistakes kids really make: off by one, off by ten,
 //  the wrong operation.
@@ -8,10 +8,24 @@
 import Foundation
 
 enum AddSub {
-    enum Kind { case makeTen, doubles, within20, missing, twoDigit }
+    enum Kind { case onesTwos, makeTen, doubles, within20, missing, twoDigit }
 
     static func card<G: RandomNumberGenerator>(_ k: Kind, using rng: inout G) -> Card {
         switch k {
+        case .onesTwos:
+            let step = Int.random(in: 1...2, using: &rng)
+            if Bool.random(using: &rng) {
+                let a = Int.random(in: 0...18, using: &rng)
+                let s = step == 1 ? "Adding 1 is just the next number: \(a) and then \(a + 1)."
+                                  : "Adding 2 is two hops: \(a), \(a + 1), \(a + 2)."
+                return add(a, step, near: [a + step + 1, a + step - 1, a, a - step], sentence: s, visual: .hops(from: a, to: a + step), using: &rng)
+            }
+            let c = Int.random(in: step...20, using: &rng)
+            let s = step == 1 ? "Taking away 1 is the number just before: \(c - 1) comes before \(c)."
+                              : "Taking away 2 is two hops back: \(c), \(c - 1), \(c - 2)."
+            let (opts, at) = Dealer.choices(answer: c - step, near: [c - step + 1, c - step - 1, c, c + step], using: &rng)
+            return Card(face: .choice(prompt: "\(c) − \(step)", options: opts), answer: at, speech: "",
+                        trick: Trick(headline: "\(c) − \(step) = \(c - step)", sentence: s, visual: .hops(from: c - step, to: c)))
         case .makeTen:
             let big = Int.random(in: 6...9, using: &rng)
             let small = Int.random(in: (11 - big)...9, using: &rng)          // crosses 10: sum 11…18

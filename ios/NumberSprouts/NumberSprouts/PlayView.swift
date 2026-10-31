@@ -50,8 +50,7 @@ struct RoundView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done,
-                   speech: round.card.speech) { model.screen = .home }
+            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done) { model.screen = .home }
             switch round.card.face {
             case .parity(let n, let dots): parityArea(n, dots)
             case .compare(let a, let b): compareArea(a, b)
@@ -276,14 +275,12 @@ struct TopBar: View {
     let count: Int
     let index: Int
     let done: Bool
-    let speech: String
     let close: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
             CircleButton(symbol: "xmark", label: "Stop playing", action: close)
             ProgressDots(count: count, index: index, done: done)
-            CircleButton(symbol: "speaker.wave.2.fill", label: "Read the question") { Speech.say(speech) }
             PlayerBadge()
         }
         .padding(.top, 8)

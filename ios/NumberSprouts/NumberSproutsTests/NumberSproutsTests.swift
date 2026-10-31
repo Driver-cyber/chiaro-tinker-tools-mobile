@@ -103,10 +103,26 @@ final class EngineTests: XCTestCase {
             }
         }
         XCTAssertEqual(AddSub.makeTen(8, 5), "8 needs 2 to make 10. Take 2 from 5, and 10 + 3 = 13.")
+        for _ in 0..<300 {
+            if case .choice(let p, _) = AddSub.card(.onesTwos, using: &g).face {
+                let n = p.components(separatedBy: CharacterSet(charactersIn: "+−")).map { Int($0.trimmingCharacters(in: .whitespaces))! }
+                XCTAssertTrue([1, 2].contains(n[1]), "only ones and twos: \(p)")
+            }
+        }
     }
 
     func testTimesTricks() {
         XCTAssertEqual(Times.trick(10, 7), "Times 10 adds a zero: 7 becomes 70.")
+        XCTAssertEqual(Times.trick(0, 10), "Times 0 is always 0: zero groups of anything is nothing.")
+        XCTAssertEqual(Times.trick(9, 0), "Times 0 is always 0: zero groups of anything is nothing.")
+        XCTAssertEqual(Times.trick(1, 7), "Times 1 keeps a number the same: 7.")
+        var g = SeededGenerator(seed: 2)
+        for _ in 0..<300 {
+            if case .choice(let p, _) = Times.card(.table(3), using: &g).face { XCTAssertTrue(p.contains("3"), p) }
+            let c = Times.card(.zeroOne, using: &g)
+            if case .choice(let p, _) = c.face { XCTAssertTrue(p.hasPrefix("0 ") || p.hasPrefix("1 ") || p.hasSuffix(" 0") || p.hasSuffix(" 1"), p) }
+            if case .nines(let n) = c.trick.visual { XCTAssertGreaterThan(n, 0, "no finger trick for ×0") }
+        }
         XCTAssertEqual(Times.trick(9, 7), "Times 9: the first digit is one less than 7, and the digits add to 9. 6 and 3 make 63.")
         XCTAssertEqual(Times.trick(4, 6), "Times 4 is double, then double again: 6 → 12 → 24.")
         XCTAssertEqual(Times.trick(7, 8), "Use one you know: 7 × 7 = 49, plus one more 7 is 56.")

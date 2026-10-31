@@ -240,7 +240,6 @@ struct ColorByNumberView: View {
             shakeRegion = i
             withAnimation(.linear(duration: 0.4)) { shakes += 1 }
             hint = "\(problems[i]) makes \(answer). That one is \(r.paint.name)!"
-            Speech.say(hint!)
         }
     }
 
@@ -249,7 +248,6 @@ struct ColorByNumberView: View {
         bursts += 1
         Haptics.right()
         done()
-        Speech.say("You made a \(picture.name)! It has \(picture.shapeSummary).")
     }
 
     private var keyPanel: some View {

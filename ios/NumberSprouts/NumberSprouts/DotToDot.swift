@@ -151,7 +151,6 @@ struct DotToDotView: View {
             .frame(maxWidth: .infinity, minHeight: 60)
             .padding(.horizontal, 12)
             .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
-            .onTapGesture { Speech.say(finished ? "A \(picture.name)!" : instructionText) }
             .accessibilityAddTraits(.isHeader)
     }
 
@@ -187,7 +186,6 @@ struct DotToDotView: View {
             if pins.count == targets.count { complete() }
         } else {
             Haptics.miss()
-            Speech.say(instructionText)
         }
     }
 
@@ -203,7 +201,6 @@ struct DotToDotView: View {
         bursts += 1
         Haptics.right()
         done()
-        Speech.say("A \(picture.name)! It has \(picture.points.count) corners.")
     }
 
     private var finishedPanel: some View {
@@ -427,7 +424,6 @@ struct ExploreView: View {
             pins = []
             message = "You made \(name)!"
             Haptics.right()
-            Speech.say(message)
             return
         }
         if pins.last == cursor { return }

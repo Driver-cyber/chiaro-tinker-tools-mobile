@@ -1,19 +1,21 @@
 //  Times.swift — Times Tables: four choices.
 //
-//  Modes: ×2 ×5 ×10, ×3 ×4, ×9 tricks, Mixed (1–10), and What times what?
-//  Tricks: ×10 adds a zero, ×5 ends in 0 or 5, ×2 is a double, ×4 is double
+//  Modes: ×0 ×1, the ×2, ×3 and ×4 tables one at a time, ×5 ×10, ×9 tricks,
+//  Mixed (1–10), and What times what?
+//  Tricks: ×0 is always 0, ×1 keeps the number, ×10 adds a zero, ×5 ends in 0 or 5, ×2 is a double, ×4 is double
 //  double, ×3 is a double plus one more, ×9's digits add to 9 (and the finger
 //  trick). Wrong choices are neighbouring facts and the added-instead mistake.
 
 import Foundation
 
 enum Times {
-    enum Kind { case twoFiveTen, threeFour, nines, mixed, whatTimesWhat }
+    enum Kind { case zeroOne, table(Int), fiveTen, nines, mixed, whatTimesWhat }
 
     static func card<G: RandomNumberGenerator>(_ k: Kind, using rng: inout G) -> Card {
         switch k {
-        case .twoFiveTen: return fact([2, 5, 10].randomElement(using: &rng)!, Int.random(in: 1...10, using: &rng), using: &rng)
-        case .threeFour: return fact([3, 4].randomElement(using: &rng)!, Int.random(in: 1...10, using: &rng), using: &rng)
+        case .zeroOne: return fact(Int.random(in: 0...1, using: &rng), Int.random(in: 0...10, using: &rng), using: &rng)
+        case .table(let f): return fact(f, Int.random(in: 1...10, using: &rng), using: &rng)
+        case .fiveTen: return fact([5, 10].randomElement(using: &rng)!, Int.random(in: 1...10, using: &rng), using: &rng)
         case .nines: return fact(9, Int.random(in: 1...10, using: &rng), using: &rng)
         case .mixed: return fact(Int.random(in: 1...10, using: &rng), Int.random(in: 1...10, using: &rng), using: &rng)
         case .whatTimesWhat: return whatTimesWhat(using: &rng)
@@ -25,17 +27,18 @@ enum Times {
         let (x, y) = Bool.random(using: &rng) ? (f, b) : (b, f)
         let p = x * y
         let near = [x * (y + 1), x * (y - 1), (x + 1) * y, (x - 1) * y, x + y, p + 1, p - 1]
-        let (opts, at) = Dealer.choices(answer: p, near: near.filter { $0 > 0 }, using: &rng)
+        let (opts, at) = Dealer.choices(answer: p, near: near.filter { $0 >= 0 }, using: &rng)
         return Card(face: .choice(prompt: "\(x) × \(y)", options: opts), answer: at,
                     speech: "What is \(x) times \(y)?",
                     trick: Trick(headline: "\(x) × \(y) = \(p)", sentence: trick(x, y),
-                                 visual: (x == 9 || y == 9) && x != y ? .nines(x == 9 ? y : x) : .array(min(x, y), max(x, y))))
+                                 visual: p == 0 ? .array(0, max(x, y)) : (x == 9 || y == 9) && x != y ? .nines(x == 9 ? y : x) : .array(min(x, y), max(x, y))))
     }
 
     /// The trick for a fact, using the friendliest factor it has.
     static func trick(_ x: Int, _ y: Int) -> String {
         let p = x * y
         func other(_ f: Int) -> Int { x == f ? y : x }
+        if x == 0 || y == 0 { return "Times 0 is always 0: zero groups of anything is nothing." }
         if x == 10 || y == 10 { let n = other(10); return "Times 10 adds a zero: \(n) becomes \(p)." }
         if x == 1 || y == 1 { return "Times 1 keeps a number the same: \(p)." }
         if x == 5 || y == 5 {

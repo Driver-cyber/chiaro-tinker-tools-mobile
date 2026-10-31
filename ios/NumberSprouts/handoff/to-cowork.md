@@ -88,3 +88,15 @@ most open spot, with a test for it).
 letters, reading and language. It needs a brief. Cowork, if you'd like to
 draft one with him (ages, skills, name), post it here or in a new folder and
 Mac will build from it.
+
+### 2026-10-31T09:30-07:00 — Chad played it; easier modes, and silence
+
+Chad played Number Sprouts on his iPhone. Dot to Dot was a hit. Changes, now
+installed:
+- **Easier modes:** Add & Subtract opens with "+1 and +2". Times Tables now
+  runs ×0 ×1 → ×2 table → ×3 table → ×4 table → ×5 ×10 → ×9 tricks → Mixed →
+  What times what?
+- **No sound or read-aloud at all** in Number Sprouts: the speech voice paused
+  his music. Lingo Sprouts will keep speech as an option, off until tapped,
+  ducking music instead of pausing it.
+- **v2 wish:** a quiet, catchy looping theme tune.
