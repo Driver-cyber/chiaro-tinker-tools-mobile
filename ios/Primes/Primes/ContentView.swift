@@ -169,12 +169,12 @@ struct QuestionView: View {
                 .textCase(Theme.labelCase)
                 .foregroundStyle(Theme.muted)
                 .padding(.top, 6)
-            Spacer(minLength: 24)
+            Spacer(minLength: 22).frame(maxHeight: 64)     // answers close under the question
             HStack(spacing: 12) {
                 answerButton("Prime", true)
                 answerButton("Composite", false)
             }
-            Spacer(minLength: 0).frame(height: ToolFan.size + 20)   // the ✦ corner; an open fan may cover the answers
+            Spacer(minLength: ToolFan.size + 20)            // the ✦ corner; an open fan may cover the answers
         }
         .overlay(alignment: .bottomTrailing) { ToolFan(sheet: $sheet) }
     }

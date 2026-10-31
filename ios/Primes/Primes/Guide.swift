@@ -287,7 +287,7 @@ struct WhyIntro: View {
             Text("The atoms of math.")
                 .font(Theme.serif(40))
                 .foregroundStyle(Theme.text)
-            Text("I built this because prime numbers are cool. Every other number is built out of them. A kid can check one by hand, and they still hide questions nobody has answered. Here's a short tour.")
+            Text("I made this because prime numbers are cool. Every other number is built out of them. A kid can check one by hand, and they still hide questions nobody has answered. Here's a short tour.")
                 .font(Theme.body(17))
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(4)
@@ -336,7 +336,7 @@ struct EuclidBeat: View {
                 Reveal(t: t, from: 0.05, to: 0.35, parts: ["2", "×", "3", "×", "5", "×", "7", "+", "1"])
                 HStack(spacing: 10) {
                     mathLine(["=", "211"], size: 30)
-                    Tag(text: "prime, and new")
+                    Tag(text: "prime")
                 }
                 .opacity(seg(t, 0.36, 0.44))
                 Reveal(t: t, from: 0.5, to: 0.72, parts: ["2", "×", "3", "×", "5", "×", "7", "×", "11", "×", "13", "+", "1"])
@@ -344,7 +344,7 @@ struct EuclidBeat: View {
                 mathLine(["=", "30031"], size: 26).opacity(seg(t, 0.73, 0.79))
                 HStack(spacing: 10) {
                     mathLine(["=", "59", "×", "509"], size: 26)
-                    Tag(text: "not on the list")
+                    Tag(text: "both prime")
                 }
                 .opacity(seg(t, 0.8, 0.86))
             }
