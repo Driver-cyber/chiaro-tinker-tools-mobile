@@ -556,6 +556,12 @@
       then `xcrun devicectl device install app`. The scar for next time:
       a `-destination id=` needs the hardware UDID (`xcrun xctrace list
       devices`), not the CoreDevice identifier.
+    * *Swipe up to open (Chad):* a swipe up on Roots, Prime tricks or
+      Checklist pulls that sheet up, as a second way in beside the tap
+      (`swipeUpOpens`, a simultaneous drag, so taps still land). Swipe
+      down to close needed no code: it's the native sheet's own drag from
+      the grabber. UI-tested on the simulator in a scratch copy: all three
+      open by swipe and close by drag, and taps still open them.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
