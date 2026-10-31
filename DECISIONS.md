@@ -642,6 +642,28 @@
       question. The App Review contact lives only in App Store Connect,
       never in this public repo.
 
+* **[2026-10-30] Number Sprouts M1 — math flash cards for Chad's kids
+  (Chad; brief from Cowork, `ios/NumberSprouts/BRIEF.md`).** A second native
+  app in this repo, on branch `kids-math-v1`: ages 6–8, offline, ad-free,
+  family install only (no App Store yet). Bundle
+  `com.chiarotinkertools.numbersprouts`.
+    * *Name and sound (Chad):* Number Sprouts; haptics only by default.
+    * *Structure (Chad, revising the brief):* the home screen picks a concept
+      at the top, then a mode named by its skill (Even or Odd: Pair the dots,
+      Numbers to 20, Last digit), each with its own stars, instead of a
+      Sprout/Grow/Stretch picker, so a kid who has a skill down isn't bored by
+      random easy cards. The levels stay under the hood.
+    * *M1:* profiles (Who's playing?, add and edit), Even or Odd end to end
+      (drag or tap a basket, glow and star burst, shake, Trick card with dots
+      pairing or the last digit lit, one retry, 1–3 stars), read-aloud,
+      Reduce Motion. Primes' bones, copied then simplified; Primes untouched.
+    * *Verified:* 9 unit tests (engine ranges and fairness across 900 seeded
+      rounds, every number's parity and trick wording, round rules, per-kid
+      progress) and a UI test that plays the whole flow from a fresh install,
+      recorded for Chad. The first compile was green.
+    * *Icon:* drawn in code (`tools/make-icon.swift`), a blue "2" with a green
+      sprout floating just above it (Chad preferred it floating).
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
