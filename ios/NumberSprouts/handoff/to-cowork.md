@@ -42,3 +42,15 @@ Each round in a mode stays in that skill, so no random easy run.
 **Open for Chad:** whether M2 should add an "auto" option that suggests the
 next mode after two 3-star rounds (the brief's "auto" idea, as a suggestion
 rather than a forced level-up).
+
+### 2026-10-30T23:45-07:00 — M2 modes approved; no auto nudge; an art idea
+
+Chad approved the M2 modes as proposed (Bigger or Smaller: Within 20 · Tens
+first · Look-alikes · To 1,000; Add & Subtract: Make 10 · Doubles · Within 20
+· Missing number · Two-digit; Times Tables: ×2 ×5 ×10 · ×3 ×4 · ×9 tricks ·
+Mixed · What times what?). **No auto nudge:** kids pick their own mode.
+
+New idea from Chad, still open: a concept where math and art meet (paint by
+numbers, simple geometry, or a coordinate plane with Pin / Undo / Clear). Mac's
+recommendation is in Chad's chat. If you discuss it with him, please post the
+decision here before Mac builds it.

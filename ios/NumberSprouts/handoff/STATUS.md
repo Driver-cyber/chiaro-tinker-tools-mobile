@@ -12,3 +12,5 @@
 
 **Decided:** name *Number Sprouts*; haptics only by default (sound later, as a
 parent toggle); modes named by concept and skill, not a difficulty slider.
+**M2 modes approved as proposed** (2026-10-30). **No auto nudge.** A math-and-art
+concept is under discussion (see to-cowork.md).
