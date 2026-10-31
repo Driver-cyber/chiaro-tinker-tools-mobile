@@ -75,8 +75,8 @@ struct RoundView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: round.phase)
         .onAppear { autoRead() }
-        .onChange(of: round.index) { _, _ in autoRead() }
-        .onChange(of: round.phase) { _, phase in
+        .onChange(of: round.index) { _ in autoRead() }
+        .onChange(of: round.phase) { phase in
             if phase == .right {
                 bursts += 1
                 Task {
@@ -335,7 +335,7 @@ struct Burst: View {
             }
         }
         .accessibilityHidden(true)
-        .onChange(of: trigger) { _, _ in
+        .onChange(of: trigger) { _ in
             out = false
             withAnimation(.easeOut(duration: 0.8)) { out = true }
         }
