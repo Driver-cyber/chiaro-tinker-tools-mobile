@@ -641,6 +641,11 @@
       agreement; `ITSAppUsesNonExemptEncryption = NO` skips the export
       question. The App Review contact lives only in App Store Connect,
       never in this public repo.
+      **Live 2026-11-02.** Chad then moved the privacy and support page off
+      the Chiaro domain to its own repo, `Driver-cyber/primes-app`, on
+      GitHub Pages (https://driver-cyber.github.io/primes-app/), so the
+      App Store listing doesn't depend on the Chiaro site. `src/primes.html`
+      stays up until the listing points at the new URLs.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main

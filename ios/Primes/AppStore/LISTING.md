@@ -17,8 +17,8 @@ fields, so the listing says "star-shaped" instead.
 | **Price** | Free (no in-app purchases, no ads) |
 | **Version / build** | 1.0 (1) |
 | **Copyright** | © 2026 Chad Stewart |
-| **Privacy policy URL** | https://chiaromobile.chadstewartcpa.com/primes#privacy |
-| **Support URL** | https://chiaromobile.chadstewartcpa.com/primes#support |
+| **Privacy policy URL** | https://driver-cyber.github.io/primes-app/#privacy |
+| **Support URL** | https://driver-cyber.github.io/primes-app/#support |
 | **Age rating** | 4+ (answer "None" / "No" to every question) |
 | **App Privacy** | Data Not Collected |
 | **Export compliance** | Declared in the build (`ITSAppUsesNonExemptEncryption = NO`), so no question at upload |
