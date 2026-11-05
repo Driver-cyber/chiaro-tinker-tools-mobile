@@ -646,6 +646,19 @@
       GitHub Pages (https://driver-cyber.github.io/primes-app/), so the
       App Store listing doesn't depend on the Chiaro site. `src/primes.html`
       stays up until the listing points at the new URLs.
+      **A URL change on a live app needs a new version and build.** Apple
+      locks a live version's listing, so the new privacy and support URLs
+      went out as 1.0.1 (2). Cowork created the version in App Store
+      Connect; Mac archived and uploaded the build.
+      **1.0.1 also carries the new guide** (Chad, 2026-11-04). How to play
+      and Why primes became a vertical pager, one idea per screen, designed
+      on a canvas first: what the buttons do (a mock question screen with a
+      working ✦), the square-root test, the prime tricks; then a chapter
+      list and one screen per chapter (atoms and molecules, Euclid, the
+      sieve, the Ulam spiral, cicadas, open problems, RSA, the record
+      prime); the 168 lit from your real collection; and the dot rectangle
+      as a bonus. The scroll-pinned beats play on their own when their page
+      arrives. Screens scale down as a whole on short phones.
 
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main

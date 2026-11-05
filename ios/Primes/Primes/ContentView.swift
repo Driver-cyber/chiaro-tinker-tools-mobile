@@ -142,7 +142,7 @@ struct WelcomeView: View {
             Button("Play") { game.deal() }.buttonStyle(FilledButtonStyle())
         }
         .sheet(isPresented: $guide) {
-            GuideView(play: { guide = false; game.deal() })
+            GuideView(solved: game.solved, play: { guide = false; game.deal() })
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Theme.bg)
         }

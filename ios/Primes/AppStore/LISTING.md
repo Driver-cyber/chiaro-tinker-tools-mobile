@@ -15,7 +15,7 @@ fields, so the listing says "star-shaped" instead.
 | **Primary language** | English (U.S.) |
 | **Category** | Education |
 | **Price** | Free (no in-app purchases, no ads) |
-| **Version / build** | 1.0 (1) |
+| **Version / build** | 1.0.1 (2) |
 | **Copyright** | © 2026 Chad Stewart |
 | **Privacy policy URL** | https://driver-cyber.github.io/primes-app/#privacy |
 | **Support URL** | https://driver-cyber.github.io/primes-app/#support |
