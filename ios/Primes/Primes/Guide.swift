@@ -1,90 +1,139 @@
-//  Guide.swift — How to play, then why primes.
+//  Guide.swift — How to play, then why primes, one screen at a time.
 //
-//  The top is enough to play: the square-root rule, one worked example (91,
-//  which looks prime), and what the buttons do. Below it, a short tour of why
-//  primes are worth a minute: each beat pins to the screen while you scroll,
-//  and the scroll itself drives the math, so you set the pace. Every figure
-//  here is checked arithmetic; nothing is decorative data except the digit
-//  wall in the last beat, which is labelled as a stand-in.
+//  A vertical pager: swipe up for the next screen. Three screens teach the
+//  game (what the buttons do, the square-root test, the prime tricks); then a
+//  chapter list and one idea per screen on why primes are worth a minute; the
+//  168 you've found; and a bonus way to see a prime. The screens themselves
+//  live in GuideScreens.swift. Every figure here is checked arithmetic; nothing
+//  is decorative data except the digit walls, which are labelled stand-ins.
 
 import SwiftUI
 
+enum GuideScreen: Int, CaseIterable {
+    case buttons, roots, tricks
+    case chapters, elements, molecules, euclid, sieve, spiral, cicadas, unsolved, secrets, biggest
+    case coda, rectangle
+}
+
 struct GuideView: View {
+    let solved: [Int: String]
     let play: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var current: Int? = 0
 
     var body: some View {
-        GeometryReader { outer in
-            ScrollView {
+        GeometryReader { g in
+            let inset = g.safeAreaInsets
+            let size = CGSize(width: g.size.width + inset.leading + inset.trailing, height: g.size.height + inset.top + inset.bottom)
+            ScrollView(.vertical) {
                 VStack(spacing: 0) {
-                    HowToPlay()
-                        .padding(.horizontal, 24)
-                        .padding(.top, 56)
-                    WhyIntro()
-                        .padding(.horizontal, 24)
-                        .padding(.top, 72)
-                        .padding(.bottom, 24)
-                    Pinned(beats: 5, page: outer.size.height) { i, t in
-                        switch i {
-                        case 0: AtomsBeat(t: t)
-                        case 1: EuclidBeat(t: t)
-                        case 2: SpiralBeat(t: t)
-                        case 3: CicadaBeat(t: t)
-                        default: SecretsBeat(t: t)
-                        }
+                    ForEach(GuideScreen.allCases, id: \.rawValue) { s in
+                        screen(s)
+                            .padding(.top, inset.top)
+                            .padding(.bottom, inset.bottom)
+                            .padding(.leading, inset.leading)
+                            .padding(.trailing, inset.trailing)
+                            .frame(width: size.width, height: size.height)
+                            .id(s.rawValue)
                     }
-                    Coda(play: play)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 72)
                 }
+                .scrollTargetLayout()
             }
-            .coordinateSpace(name: "guide")
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $current)
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea()
         }
         .background(Theme.bg.ignoresSafeArea())
+        .overlay(alignment: .trailing) { PageDots(count: GuideScreen.allCases.count, current: current ?? 0) }
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).frame(width: 48, height: 48)
             }
             .foregroundStyle(Theme.text)
-            .background(Theme.bg.opacity(0.85), in: Circle())
+            .background(Theme.panel, in: Circle())
+            .overlay(Circle().stroke(Theme.border, lineWidth: 1))
             .padding(.top, 10)
-            .padding(.trailing, 10)
+            .padding(.trailing, 14)
             .accessibilityLabel("Close")
+        }
+    }
+
+    private func go(_ s: GuideScreen) {
+        Haptics.tick()
+        withAnimation(.easeInOut(duration: 0.4)) { current = s.rawValue }
+    }
+
+    @ViewBuilder private func screen(_ s: GuideScreen) -> some View {
+        let active = current == s.rawValue
+        switch s {
+        case .buttons:   ButtonsScreen()
+        case .roots:     RootsScreen()
+        case .tricks:    TricksScreen()
+        case .chapters:  ChaptersScreen(go: go)
+        case .elements:  ElementsScreen()
+        case .molecules: MoleculesScreen()
+        case .euclid:    Driven(active: active, seconds: 5) { EuclidBeat(t: $0) }
+        case .sieve:     SieveScreen()
+        case .spiral:    Driven(active: active, seconds: 4) { SpiralBeat(t: $0) }
+        case .cicadas:   Driven(active: active, seconds: 6) { CicadaBeat(t: $0) }
+        case .unsolved:  UnsolvedScreen()
+        case .secrets:   Driven(active: active, seconds: 6) { SecretsBeat(t: $0) }
+        case .biggest:   BiggestScreen()
+        case .coda:      CodaScreen(solved: solved, play: play)
+        case .rectangle: RectangleScreen()
         }
     }
 }
 
-// MARK: - Scroll mechanics
+/// Where you are in the pager: a thin column of dots on the right edge.
+private struct PageDots: View {
+    let count: Int
+    let current: Int
+    var body: some View {
+        VStack(spacing: 6) {
+            ForEach(0..<count, id: \.self) { k in
+                Circle()
+                    .fill(k == current ? Theme.accent : Theme.border)
+                    .frame(width: k == current ? 6 : 4, height: k == current ? 6 : 4)
+            }
+        }
+        .frame(width: 10)
+        .padding(.trailing, 5)
+        .animation(.easeOut(duration: 0.2), value: current)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Beat mechanics
 
 /// 0 before a, 1 after b, linear between.
-private func seg(_ t: Double, _ a: Double, _ b: Double) -> Double {
+func seg(_ t: Double, _ a: Double, _ b: Double) -> Double {
     min(max((t - a) / (b - a), 0), 1)
 }
 
-/// A tall block whose content stays pinned to the screen while it scrolls
-/// past, one screen of scrolling per beat. Hands each beat its local
-/// progress 0…1, and cross-fades between beats.
-struct Pinned<Content: View>: View {
-    let beats: Int
-    let page: CGFloat
-    @ViewBuilder let content: (Int, Double) -> Content
+/// Plays a beat's 0…1 timeline once each time its screen comes into view.
+/// Reduce Motion shows the finished state.
+struct Driven<Content: View>: View {
+    let active: Bool
+    let seconds: Double
+    @ViewBuilder let content: (Double) -> Content
+    @State private var t = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        GeometryReader { g in
-            let travel = page * CGFloat(beats)
-            let scrolled = min(max(-g.frame(in: .named("guide")).minY, 0), travel)
-            let p = page > 0 ? Double(scrolled / page) : 0       // 0…beats; a first layout pass can report a zero height
-            let i = min(Int(p), beats - 1)
-            let t = p - Double(i)
-            let fadeIn = i == 0 ? 1 : seg(t, 0, 0.12)
-            let fadeOut = i == beats - 1 ? 1 : 1 - seg(t, 0.88, 1)
-            content(i, t)
-                .id(i)
-                .frame(width: g.size.width, height: page)
-                .opacity(fadeIn * fadeOut)
-                .offset(y: scrolled)
-        }
-        .frame(height: page * CGFloat(beats + 1))
+        GuidePage { content(t) }
+            .task(id: active) {
+                guard active else { return }
+                if reduceMotion { t = 1; return }
+                let steps = Int(seconds * 30)
+                for k in 0...steps {
+                    if Task.isCancelled { return }
+                    t = Double(k) / Double(steps)
+                    try? await Task.sleep(for: .milliseconds(33))
+                }
+            }
     }
 }
 
@@ -97,15 +146,8 @@ struct Beat<Visual: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(kicker)
-                .font(Theme.body(12.5, .semibold))
-                .textCase(.uppercase)
-                .tracking(1.6)
-                .foregroundStyle(Theme.accent)
-            Text(title)
-                .font(Theme.serif(34))
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
+            Kicker(text: kicker)
+            Headline(text: title)
             visual
                 .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 340)
             Text(caption)
@@ -113,14 +155,13 @@ struct Beat<Visual: View>: View {
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 24)
-        .frame(maxHeight: .infinity)
     }
 }
 
 /// Math with its primes in the accent colour.
-private func mathLine(_ parts: [String], size: CGFloat = 20) -> Text {
+func mathLine(_ parts: [String], size: CGFloat = 20) -> Text {
     var s = AttributedString()
     for (k, part) in parts.enumerated() {
         var a = AttributedString((k == 0 ? "" : " ") + part)
@@ -146,184 +187,7 @@ enum Sieve {
     static func isPrime(_ n: Int) -> Bool { n >= 0 && n <= limit && flags[n] }
 }
 
-// MARK: - How to play
-
-struct HowToPlay: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("How to play")
-                .font(Theme.serif(34))
-                .foregroundStyle(Theme.accent)
-            Text("A prime has exactly two divisors: 1 and itself. 7 is prime. 8 isn't: it's 2 × 4.")
-                .font(Theme.body(16))
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("To test a number, divide it by each prime up to its square root. If none go in evenly, it's prime.")
-                .font(Theme.body(17, .semibold))
-                .foregroundStyle(Theme.text)
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: Theme.r(12)))
-                .overlay(RoundedRectangle(cornerRadius: Theme.r(12)).stroke(Theme.accent, lineWidth: 1))
-                .fixedSize(horizontal: false, vertical: true)
-            WorkedExample()
-            Text("Why stop at the square root? If a number splits as a × b, one of the two is at most its square root. So if nothing that small divides it, nothing does.")
-                .font(Theme.body(14))
-                .foregroundStyle(Theme.muted)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-            Rule().padding(.vertical, 4)
-            VStack(alignment: .leading, spacing: 12) {
-                HowRow(symbol: "number", text: "You get a number from 2 to 999. Work it out in your head, then tap Prime or Composite.")
-                HowRow(symbol: "text.magnifyingglass", text: "Every answer shows the method, so a miss still teaches you something.")
-                HowRow(symbol: "sparkle", text: "Stuck? The ✦ in the corner fans out Roots, Prime tricks and Checklist. Tricks are shortcuts, like adding up the digits to test 3.")
-                HowRow(symbol: "dial.medium", text: "Easy, Medium and Hard set how sneaky the numbers get.")
-                HowRow(symbol: "lightbulb", text: "Call a prime right and it lights up in your collection. There are 168 under 1,000.")
-            }
-            HStack(spacing: 8) {
-                Image(systemName: "chevron.down")
-                Text("Keep scrolling: why primes")
-            }
-            .font(Theme.body(13, .semibold))
-            .textCase(Theme.labelCase)
-            .foregroundStyle(Theme.muted)
-            .frame(maxWidth: .infinity)
-            .padding(.top, 20)
-        }
-    }
-}
-
-private struct Rule: View {
-    var body: some View { Theme.border.frame(height: 1) }
-}
-
-private struct HowRow: View {
-    let symbol: String
-    let text: String
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.accent)
-                .frame(width: 22)
-                .accessibilityHidden(true)
-            Text(text)
-                .font(Theme.body(15))
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
-
-/// 91, tested live: the four candidate primes tick off one by one.
-struct WorkedExample: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var shown = 0
-
-    private let checks: [(p: Int, why: String, hit: Bool)] = [
-        (2, "91 is odd", false),
-        (3, "9 + 1 = 10, not a multiple of 3", false),
-        (5, "doesn't end in 0 or 5", false),
-        (7, "91 = 7 × 13", true),
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Try").font(Theme.body(16)).foregroundStyle(Theme.muted)
-                Text("91").font(Theme.number(44)).foregroundStyle(Theme.text)
-            }
-            Text("9² = 81 and 10² = 100, so √91 is between 9 and 10. Check the primes up to 9:")
-                .font(Theme.body(15))
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-            ForEach(Array(checks.enumerated()), id: \.offset) { k, c in
-                HStack(spacing: 12) {
-                    Text(String(c.p))
-                        .font(Theme.mono(17, .bold))
-                        .foregroundStyle(c.hit ? Theme.ink : Theme.text)
-                        .frame(width: 40, height: 40)
-                        .background(c.hit ? Theme.accent : Theme.panel, in: RoundedRectangle(cornerRadius: Theme.r(8)))
-                        .overlay(RoundedRectangle(cornerRadius: Theme.r(8)).stroke(c.hit ? Theme.accent : Theme.border, lineWidth: 1))
-                    Image(systemName: c.hit ? "checkmark" : "xmark")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(c.hit ? Theme.accent : Theme.muted)
-                    Text(c.why)
-                        .font(Theme.mono(14))
-                        .foregroundStyle(c.hit ? Theme.accent : Theme.muted)
-                }
-                .opacity(k < shown ? 1 : 0.15)
-                .offset(x: k < shown ? 0 : 8)
-            }
-            Text("Composite. It looks prime, which is exactly what makes it a good one.")
-                .font(Theme.body(15, .semibold))
-                .foregroundStyle(Theme.text)
-                .opacity(shown >= checks.count ? 1 : 0)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .background(Theme.panel, in: RoundedRectangle(cornerRadius: Theme.r(12)))
-        .overlay(RoundedRectangle(cornerRadius: Theme.r(12)).stroke(Theme.border, lineWidth: 1))
-        .task {
-            if reduceMotion { shown = checks.count; return }
-            for k in 1...checks.count {
-                try? await Task.sleep(for: .milliseconds(k == 1 ? 700 : 650))
-                withAnimation(.easeOut(duration: 0.35)) { shown = k }
-            }
-        }
-    }
-}
-
 // MARK: - Why primes
-
-struct WhyIntro: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Why primes")
-                .font(Theme.body(12.5, .semibold))
-                .textCase(.uppercase)
-                .tracking(1.6)
-                .foregroundStyle(Theme.accent)
-            Text("The atoms of math.")
-                .font(Theme.serif(40))
-                .foregroundStyle(Theme.text)
-            Text("I made this because prime numbers are cool. Every other number is built out of them. A kid can check one by hand, and they still hide questions nobody has answered. Here's a short tour.")
-                .font(Theme.body(17))
-                .foregroundStyle(Theme.muted)
-                .lineSpacing(4)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// 360 splits until only primes are left.
-struct AtomsBeat: View {
-    let t: Double
-    private let lines: [[String]] = [
-        ["360"],
-        ["=", "2", "×", "180"],
-        ["=", "2", "×", "2", "×", "90"],
-        ["=", "2", "×", "2", "×", "2", "×", "45"],
-        ["=", "2", "×", "2", "×", "2", "×", "3", "×", "15"],
-        ["=", "2", "×", "2", "×", "2", "×", "3", "×", "3", "×", "5"],
-    ]
-
-    var body: some View {
-        Beat(kicker: "One", title: "Every number is made of primes.",
-             caption: "Keep splitting any number and you always land on primes, the atoms nothing else is made of. And each number has exactly one recipe. Mathematicians call it the Fundamental Theorem of Arithmetic.") {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(Array(lines.enumerated()), id: \.offset) { k, parts in
-                    let a = seg(t, 0.08 + Double(k) * 0.1, 0.16 + Double(k) * 0.1)
-                    mathLine(parts, size: k == 0 ? 34 : 19)
-                        .opacity(k == 0 ? 1 : a)
-                        .offset(y: (1 - a) * 12)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-}
 
 /// Multiply every prime you know, add one.
 struct EuclidBeat: View {
@@ -366,7 +230,7 @@ private struct Reveal: View {
     }
 }
 
-private struct Tag: View {
+struct Tag: View {
     let text: String
     var body: some View {
         Text(text)
@@ -404,7 +268,7 @@ struct SpiralBeat: View {
 
     var body: some View {
         let shown = Int(seg(t, 0.05, 0.8) * Double(Self.cells.count))
-        Beat(kicker: "Three", title: "They have a pattern nobody has cracked.",
+        Beat(kicker: "Four", title: "They have a pattern nobody has cracked.",
              caption: "In 1963 Stanisław Ulam, stuck in a dull talk, wrote the numbers in a spiral and circled the primes. They lined up along diagonals. Mathematicians can explain some of it. Nobody has proved all of it.") {
             Canvas { ctx, size in
                 let cell = min(size.width, size.height) / CGFloat(Self.side)
@@ -429,7 +293,7 @@ struct CicadaBeat: View {
 
     var body: some View {
         let year = seg(t, 0.08, 0.8) * 102
-        Beat(kicker: "Four", title: "Nature counts in primes, too.",
+        Beat(kicker: "Five", title: "Nature counts in primes, too.",
              caption: "Some cicadas live 13 or 17 years underground, then all come up at once. One theory for why: a prime cycle rarely lines up with the shorter cycles of predators.") {
             VStack(alignment: .leading, spacing: 26) {
                 Timeline(cycle: 12, year: year)
@@ -492,7 +356,7 @@ struct SecretsBeat: View {
     var body: some View {
         let k = min(Int(seg(t, 0.3, 0.62) * Double(trial.count)), trial.count - 1)
         let found = seg(t, 0.3, 0.62) >= 1
-        Beat(kicker: "Five", title: "And they keep your secrets.",
+        Beat(kicker: "Seven", title: "And they keep your secrets.",
              caption: "Multiplying two huge primes takes a computer an instant. Splitting the answer back into them, when each prime is hundreds of digits long, would take longer than anyone can wait. That one-way street is RSA, part of what keeps messages and payments private.") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
@@ -539,31 +403,4 @@ enum DigitWall {
         for _ in 0..<617 { x = x &* 1_103_515_245 &+ 12_345; s.append(Character(String((x >> 16) % 10))) }
         return s
     }()
-}
-
-// MARK: - Coda
-
-struct Coda: View {
-    let play: () -> Void
-    var body: some View {
-        VStack(spacing: 14) {
-            Text("168")
-                .font(Theme.number(96))
-                .foregroundStyle(Theme.accent)
-                .shadow(color: Theme.glow, radius: 12)
-            Text("primes under 1,000.")
-                .font(Theme.serif(26))
-                .foregroundStyle(Theme.text)
-            Text("Every one of them can be spotted by hand. Each lights up the first time you call it.")
-                .font(Theme.body(15))
-                .foregroundStyle(Theme.muted)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 300)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Play", action: play)
-                .buttonStyle(FilledButtonStyle())
-                .padding(.top, 18)
-        }
-        .frame(maxWidth: .infinity)
-    }
 }
