@@ -10,6 +10,7 @@ import SwiftUI
 struct PlayView: View {
     @EnvironmentObject private var model: AppModel
     let modeID: String
+    var picture: String? = nil
     @State private var roundKey = 0
 
     var body: some View {
@@ -18,7 +19,7 @@ struct PlayView: View {
             case .cards(let deal):
                 RoundView(mode: mode, cards: deal()) { roundKey += 1 }.id(roundKey)
             case .draw(let kind):
-                DrawView(mode: mode, kind: kind)
+                DrawView(mode: mode, kind: kind, start: picture)
             }
         }
     }
@@ -50,7 +51,7 @@ struct RoundView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done) { model.screen = .home }
+            TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done) { model.goBack() }
             switch round.card.face {
             case .parity(let n, let dots): parityArea(n, dots)
             case .compare(let a, let b): compareArea(a, b)
@@ -72,7 +73,7 @@ struct RoundView: View {
         }
         .overlay {
             if round.phase == .done {
-                SummaryView(stars: round.stars, firstTry: round.firstTry, count: round.count, again: again) { model.screen = .home }
+                SummaryView(stars: round.stars, firstTry: round.firstTry, count: round.count, again: again) { model.goBack() }
                     .transition(.opacity)
             }
         }

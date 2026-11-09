@@ -1,36 +1,21 @@
-//  HomeView.swift — pick a concept at the top, then a mode, and play.
+//  HomeView.swift — Paint by Number first, everything else one tap down.
 //
-//  Concepts (Even or Odd, Bigger or Smaller, Add & Subtract, Times Tables) sit
-//  in a row at the top. Under the chosen one, its modes are named by the skill
-//  they practise ("Pair the dots", "Last digit"), each with its own stars, so a
-//  kid who has one skill down goes straight to the next instead of wading
-//  through random easy cards. The list itself lives in Modes.swift.
+//  Home is the pictures to paint, with a To 10 / To 20 switch, then two tiles
+//  (Dot to Dot, Draw your own) and one for the card games. Number games keeps
+//  the old concept bar and skill tiles; Dot to Dot lists its two ways to play.
+//  Back from any game returns to the screen it was started from.
 
 import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var picked: Concept?
-
-    /// Reopens on the concept of the last mode played, so Stop or Done comes back to where the kid was.
-    private var concept: Concept {
-        picked ?? model.current?.lastMode.flatMap { Modes.mode($0)?.concept } ?? .evenOdd
-    }
-
-    /// Stars for card modes; finished pictures for Draw.
-    private func progress(_ mode: Mode, _ p: Profile?) -> (symbol: String, text: String, lit: Bool) {
-        if case .draw(let kind) = mode.play {
-            guard kind != .explore else { return ("scribble", "Free play", false) }
-            let done = p?.pictures.filter { $0.hasPrefix(mode.id + "/") }.count ?? 0
-            return ("photo.fill", "\(done) of \(Pictures.count(kind)) pictures", done > 0)
-        }
-        let stars = p?.stars[mode.id] ?? 0
-        return ("star.fill", "\(stars)", stars > 0)
-    }
+    @AppStorage("ns.paintTo") private var paintTo = 10
 
     var body: some View {
         let p = model.current
-        VStack(alignment: .leading, spacing: 18) {
+        let modeID = paintTo == 20 ? "dr.color20" : "dr.color10"
+        let done = p?.pictures ?? []
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Hi, \(p?.name ?? "friend")!")
                     .font(Theme.round(34))
@@ -40,13 +25,26 @@ struct HomeView: View {
                 Spacer()
                 PlayerBadge()
             }
-            ConceptBar(selection: Binding(get: { concept }, set: { picked = $0 }))
             ScrollView {
-                VStack(spacing: 14) {
-                    ForEach(Modes.modes(concept)) { mode in
-                        ModeTile(mode: mode, progress: progress(mode, p), last: p?.lastMode == mode.id) {
-                            model.play(mode.id)
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Text("Paint by Number").font(Theme.round(24)).foregroundStyle(Theme.text)
+                        Spacer()
+                        LevelSwitch(value: $paintTo)
+                    }
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
+                        ForEach(Pictures.color) { pic in
+                            PictureCard(kind: .color(max: paintTo), id: pic.id, name: pic.name, finished: done.contains("\(modeID)/\(pic.id)")) {
+                                model.play(modeID, picture: pic.id)
+                            }
                         }
+                    }
+                    HStack(spacing: 14) {
+                        SquareTile(title: "Dot to Dot", art: "→↑") { model.screen = .dots; Haptics.tick() }
+                        SquareTile(title: "Draw your own", art: "✏️") { model.play("dr.explore") }
+                    }
+                    WideTile(title: "Number games", detail: "Even or odd, bigger or smaller, adding, times tables", symbol: "square.grid.2x2.fill") {
+                        model.screen = .games; Haptics.tick()
                     }
                 }
                 .padding(.bottom, 20)
@@ -57,13 +55,157 @@ struct HomeView: View {
     }
 }
 
+/// To 10 or To 20: how big the answers in the pictures get.
+private struct LevelSwitch: View {
+    @Binding var value: Int
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach([10, 20], id: \.self) { n in
+                let on = value == n
+                Button { value = n; Haptics.tick() } label: {
+                    Text("To \(n)").font(Theme.round(16, .bold))
+                        .foregroundStyle(on ? Theme.onColor : Theme.text)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(on ? Theme.sprout : .clear, in: Capsule())
+                }
+                .accessibilityLabel("Answers to \(n)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Theme.card, in: Capsule())
+        .overlay(Capsule().stroke(Theme.border, lineWidth: 2))
+    }
+}
+
+private struct SquareTile: View {
+    let title: String
+    let art: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Text(art).font(Theme.round(34)).foregroundStyle(Theme.text).accessibilityHidden(true)
+                Text(title).font(Theme.round(20)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, minHeight: 130)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Theme.border, lineWidth: 2))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct WideTile: View {
+    let title: String
+    let detail: String
+    let symbol: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: symbol).font(.system(size: 28, weight: .bold)).foregroundStyle(Theme.sprout)
+                    .frame(width: 60, height: 60).background(Theme.bg, in: RoundedRectangle(cornerRadius: 18))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(Theme.round(22)).foregroundStyle(Theme.text)
+                    Text(detail).font(Theme.round(15, .semibold)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.muted)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Theme.border, lineWidth: 2))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A screen one level down from home: Back, a title, the player, then the list.
+private struct SubScreen<Content: View>: View {
+    @EnvironmentObject private var model: AppModel
+    let title: String
+    @ViewBuilder let content: Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                CircleButton(symbol: "chevron.left", label: "Home") { model.screen = .home }
+                Text(title).font(Theme.round(28)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.6)
+                Spacer()
+                PlayerBadge()
+            }
+            content
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+    }
+}
+
+/// Stars for card modes; finished pictures for Draw.
+private func progress(_ mode: Mode, _ p: Profile?) -> (symbol: String, text: String, lit: Bool) {
+    if case .draw(let kind) = mode.play {
+        guard kind != .explore else { return ("scribble", "Free play", false) }
+        let done = p?.pictures.filter { $0.hasPrefix(mode.id + "/") }.count ?? 0
+        return ("photo.fill", "\(done) of \(Pictures.count(kind)) pictures", done > 0)
+    }
+    let stars = p?.stars[mode.id] ?? 0
+    return ("star.fill", "\(stars)", stars > 0)
+}
+
+/// The card games: a concept at the top, then its skills.
+struct GamesView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var picked: Concept?
+
+    /// Opens on the concept of the last card game played.
+    private var concept: Concept {
+        if let c = picked { return c }
+        if let c = model.current?.lastMode.flatMap({ Modes.mode($0)?.concept }), Concept.games.contains(c) { return c }
+        return .evenOdd
+    }
+
+    var body: some View {
+        let p = model.current
+        SubScreen(title: "Number games") {
+            ConceptBar(selection: Binding(get: { concept }, set: { picked = $0 }))
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(Modes.modes(concept)) { mode in
+                        ModeTile(mode: mode, progress: progress(mode, p), last: p?.lastMode == mode.id) { model.play(mode.id) }
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+    }
+}
+
+/// Dot to Dot's two ways to play.
+struct DotsView: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        let p = model.current
+        SubScreen(title: "Dot to Dot") {
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(["dr.steps", "dr.pairs"].compactMap(Modes.mode)) { mode in
+                        ModeTile(mode: mode, progress: progress(mode, p), last: p?.lastMode == mode.id) { model.play(mode.id) }
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+    }
+}
+
 /// The concepts, one picture-and-word button each.
 private struct ConceptBar: View {
     @Binding var selection: Concept
 
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(Concept.allCases) { c in
+            ForEach(Concept.games) { c in
                 let on = c == selection
                 Button { selection = c; Haptics.tick() } label: {
                     VStack(spacing: 6) {

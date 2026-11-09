@@ -38,11 +38,14 @@ struct Profile: Codable, Identifiable, Equatable {
 }
 
 final class AppModel: ObservableObject {
-    enum Screen: Equatable { case who, home, play(String) }
+    /// Home leads with Paint by Number; Dot to Dot and the card games are one level down.
+    enum Screen: Equatable { case who, home, games, dots, play(String, picture: String? = nil) }
 
     @Published private(set) var profiles: [Profile] = []
     @Published var currentID: UUID?
     @Published var screen: Screen = .who
+    /// Where a game's Back or Done returns to: the screen it was started from.
+    private(set) var back: Screen = .home
 
     static let storeKey = "ns.profiles.v1"
     private let store: UserDefaults
@@ -57,15 +60,19 @@ final class AppModel: ObservableObject {
     func choose(_ p: Profile) {
         currentID = p.id
         screen = .home
+        back = .home
         Haptics.tick()
     }
 
     func switchPlayer() { screen = .who }
 
-    func play(_ modeID: String) {
+    func play(_ modeID: String, picture: String? = nil) {
         update { $0.lastMode = modeID }
-        screen = .play(modeID)
+        if case .play = screen {} else { back = screen }
+        screen = .play(modeID, picture: picture)
     }
+
+    func goBack() { screen = back }
 
     /// Adds or replaces a profile by id.
     func save(_ p: Profile) {

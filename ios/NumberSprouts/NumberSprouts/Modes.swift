@@ -9,6 +9,8 @@ import Foundation
 enum Concept: String, CaseIterable, Identifiable {
     case evenOdd, biggerSmaller, addSubtract, times, draw
     var id: String { rawValue }
+    /// The card games, behind Number games on the home screen (Draw is the home screen).
+    static let games: [Concept] = [.evenOdd, .biggerSmaller, .addSubtract, .times]
     var title: String {
         switch self {
         case .evenOdd: return "Even or Odd"
