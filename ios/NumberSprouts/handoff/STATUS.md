@@ -28,3 +28,5 @@ music). **v2 idea:** a quiet, catchy theme-music loop.
 **Next after M4's first install:** a sibling app for letters, reading and language (Chad, 2026-10-30), with its brief and decisions still to come.
 
 **Chad after the kids played (2026-11-08), done:** Draw was the hit, so home is Paint by Number (To 10 / To 20) with Dot to Dot, Draw your own and a Number games tile one level down. Eight more pictures: apple tree, car, flower, snowman, and four scenes with little characters (tea party, rainy day duck, snail's mushroom house, camping fox) whose faces are pre-drawn details.
+
+**Math Quest (2026-11-08, Chad's idea for his son, who loves creature battles):** an original quest, "The Wishing Star": pick a buddy (Cinder, Puddles, Sprig), six stops, each a turn-based battle. Foe turns: solve to dodge; buddy turns: solve to land the move. Regular battles: within 10, within 20, then sums and differences to 100 with one small or round number. Bosses (Grumble, Smokewing) attack with two-digit problems (23 + 14, 4 × 20, 38 + 45). A miss shows the trick; no game over, the buddy rests and tries again. Progress per profile. Trial and error: tune from watching him play.

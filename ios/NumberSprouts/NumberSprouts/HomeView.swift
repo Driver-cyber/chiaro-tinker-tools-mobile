@@ -39,6 +39,9 @@ struct HomeView: View {
                             }
                         }
                     }
+                    WideTile(title: "Math Quest", detail: "Battle creatures with math and bring home the Wishing Star", symbol: "shield.lefthalf.filled") {
+                        model.screen = .quest; Haptics.tick()
+                    }
                     HStack(spacing: 14) {
                         SquareTile(title: "Dot to Dot", art: "→↑") { model.screen = .dots; Haptics.tick() }
                         SquareTile(title: "Draw your own", art: "✏️") { model.play("dr.explore") }

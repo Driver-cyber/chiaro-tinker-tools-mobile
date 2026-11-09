@@ -26,6 +26,7 @@ struct RootView: View {
             case .who: WhoView().transition(.opacity)
             case .home: HomeView().transition(.move(edge: .trailing).combined(with: .opacity))
             case .games: GamesView().transition(.move(edge: .trailing).combined(with: .opacity))
+            case .quest: QuestView().transition(.move(edge: .trailing).combined(with: .opacity))
             case .dots: DotsView().transition(.move(edge: .trailing).combined(with: .opacity))
             case .play(let id, let picture): PlayView(modeID: id, picture: picture).transition(.move(edge: .bottom).combined(with: .opacity))
             }

@@ -17,6 +17,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var rounds: [String: Int] = [:]         // mode id → rounds finished
     var pictures: Set<String> = []          // finished Draw pictures, "dr.steps/boat"
     var lastMode: String?
+    var quest = QuestSave()
 
     init(id: UUID = UUID(), name: String, icon: String, isSymbol: Bool = false, color: Int = 0) {
         self.id = id; self.name = name; self.icon = icon; self.isSymbol = isSymbol; self.color = color
@@ -34,12 +35,13 @@ struct Profile: Codable, Identifiable, Equatable {
         rounds = try c.decodeIfPresent([String: Int].self, forKey: .rounds) ?? [:]
         pictures = try c.decodeIfPresent(Set<String>.self, forKey: .pictures) ?? []
         lastMode = try c.decodeIfPresent(String.self, forKey: .lastMode)
+        quest = try c.decodeIfPresent(QuestSave.self, forKey: .quest) ?? QuestSave()
     }
 }
 
 final class AppModel: ObservableObject {
     /// Home leads with Paint by Number; Dot to Dot and the card games are one level down.
-    enum Screen: Equatable { case who, home, games, dots, play(String, picture: String? = nil) }
+    enum Screen: Equatable { case who, home, games, dots, quest, play(String, picture: String? = nil) }
 
     @Published private(set) var profiles: [Profile] = []
     @Published var currentID: UUID?
@@ -89,6 +91,10 @@ final class AppModel: ObservableObject {
             $0.stars[mode, default: 0] += stars
             $0.rounds[mode, default: 0] += 1
         }
+    }
+
+    func saveQuest(_ change: (inout QuestSave) -> Void) {
+        update { change(&$0.quest) }
     }
 
     func recordPicture(_ key: String) {
