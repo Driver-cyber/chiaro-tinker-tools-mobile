@@ -38,11 +38,14 @@ struct Profile: Codable, Identifiable, Equatable {
 }
 
 final class AppModel: ObservableObject {
-    enum Screen: Equatable { case who, home, play(String) }
+    /// Home is the five topics; each topic's games are one tap down.
+    enum Screen: Equatable { case who, home, topic(Concept), play(String) }
 
     @Published private(set) var profiles: [Profile] = []
     @Published var currentID: UUID?
     @Published var screen: Screen = .who
+    /// Where a game's Back or Done returns to: the screen it was started from.
+    private(set) var back: Screen = .home
 
     static let storeKey = "ls.profiles.v1"
     /// Read cards aloud as they appear. Off by default: the speaker button always works.
@@ -62,6 +65,7 @@ final class AppModel: ObservableObject {
     func choose(_ p: Profile) {
         currentID = p.id
         screen = .home
+        back = .home
         Haptics.tick()
     }
 
@@ -69,8 +73,11 @@ final class AppModel: ObservableObject {
 
     func play(_ modeID: String) {
         update { $0.lastMode = modeID }
+        if case .play = screen {} else { back = screen }
         screen = .play(modeID)
     }
+
+    func goBack() { screen = back }
 
     /// Adds or replaces a profile by id.
     func save(_ p: Profile) {

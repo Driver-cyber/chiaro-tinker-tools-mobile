@@ -1,21 +1,49 @@
-//  HomeView.swift — pick a concept at the top, then a mode, and play.
+//  HomeView.swift — five topics at home; each topic's games one tap down.
 //
-//  Concepts (Sounds, Rhymes, Words, Word tricks, Story) sit in a row at the
-//  top. Under the chosen one, its modes are named by the skill they practise
-//  ("First sound", "Magic e"), each with its own stars, so a
-//  kid who has one skill down goes straight to the next instead of wading
-//  through random easy cards. The list itself lives in Modes.swift.
+//  Home is just the topics (Sounds, Rhymes, Words, Word tricks, Story), one
+//  big tile each, plus read aloud and the player. A topic opens its games,
+//  named by the skill they practise ("First sound", "Magic e"), each with its
+//  own stars. Back from a game returns to its topic. The list itself lives
+//  in Modes.swift.
 
 import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var picked: Concept?
 
-    /// Reopens on the concept of the last mode played, so Stop or Done comes back to where the kid was.
-    private var concept: Concept {
-        picked ?? model.current?.lastMode.flatMap { Modes.mode($0)?.concept } ?? .sounds
+    var body: some View {
+        let p = model.current
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Text("Hi, \(p?.name ?? "friend")!")
+                    .font(Theme.round(34))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Spacer()
+                ReadAloudButton()
+                PlayerBadge()
+            }
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(Concept.allCases) { c in
+                        TopicTile(concept: c, last: p?.lastMode.flatMap { Modes.mode($0)?.concept } == c) {
+                            model.screen = .topic(c); Haptics.tick()
+                        }
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
     }
+}
+
+/// One topic's games, with Back to home.
+struct TopicView: View {
+    @EnvironmentObject private var model: AppModel
+    let concept: Concept
 
     /// Stars for card modes; the story count for Story.
     private func progress(_ mode: Mode, _ p: Profile?) -> (symbol: String, text: String, lit: Bool) {
@@ -33,26 +61,13 @@ struct HomeView: View {
     var body: some View {
         let p = model.current
         VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text("Hi, \(p?.name ?? "friend")!")
-                    .font(Theme.round(34))
-                    .foregroundStyle(Theme.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+            HStack(spacing: 12) {
+                CircleButton(symbol: "chevron.left", label: "Home") { model.screen = .home }
+                Text(concept.title).font(Theme.round(28)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer()
-                Button { model.readAloud.toggle(); Haptics.tick() } label: {
-                    Image(systemName: model.readAloud ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(model.readAloud ? Theme.onColor : Theme.muted)
-                        .frame(width: 52, height: 52)
-                        .background(model.readAloud ? Theme.even : Theme.card, in: Circle())
-                        .overlay(Circle().stroke(Theme.border, lineWidth: 2))
-                }
-                .accessibilityLabel(model.readAloud ? "Read aloud is on" : "Read aloud is off")
-                .accessibilityHint("Reads each card out loud as it appears")
+                ReadAloudButton()
                 PlayerBadge()
             }
-            ConceptBar(selection: Binding(get: { concept }, set: { picked = $0 }))
             ScrollView {
                 VStack(spacing: 14) {
                     ForEach(Modes.modes(concept)) { mode in
@@ -69,33 +84,52 @@ struct HomeView: View {
     }
 }
 
-/// The concepts, one picture-and-word button each.
-private struct ConceptBar: View {
-    @Binding var selection: Concept
+/// Reads each card out loud as it appears, when on.
+private struct ReadAloudButton: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        Button { model.readAloud.toggle(); Haptics.tick() } label: {
+            Image(systemName: model.readAloud ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(model.readAloud ? Theme.onColor : Theme.muted)
+                .frame(width: 52, height: 52)
+                .background(model.readAloud ? Theme.even : Theme.card, in: Circle())
+                .overlay(Circle().stroke(Theme.border, lineWidth: 2))
+        }
+        .accessibilityLabel(model.readAloud ? "Read aloud is on" : "Read aloud is off")
+        .accessibilityHint("Reads each card out loud as it appears")
+    }
+}
+
+/// A topic at home: its picture, name and what's inside.
+private struct TopicTile: View {
+    let concept: Concept
+    let last: Bool
+    let open: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(Concept.allCases) { c in
-                let on = c == selection
-                Button { selection = c; Haptics.tick() } label: {
-                    VStack(spacing: 6) {
-                        Image(systemName: c.symbol).font(.system(size: 24, weight: .bold))
-                        Text(c.title)
-                            .font(Theme.round(11.5, .bold))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .foregroundStyle(on ? Theme.onColor : Theme.text)
-                    .frame(maxWidth: .infinity, minHeight: 88)
-                    .padding(.horizontal, 2)
-                    .background(on ? Theme.sprout : Theme.card, in: RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(on ? Theme.sprout : Theme.border, lineWidth: 2))
+        Button(action: open) {
+            HStack(spacing: 16) {
+                Image(systemName: concept.symbol)
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(Theme.sprout)
+                    .frame(width: 76, height: 76)
+                    .background(Theme.bg, in: RoundedRectangle(cornerRadius: 20))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(concept.title).font(Theme.round(24)).foregroundStyle(Theme.text)
+                    Text(concept.blurb).font(Theme.round(15, .semibold)).foregroundStyle(Theme.muted).fixedSize(horizontal: false, vertical: true)
                 }
-                .accessibilityLabel(c.title)
-                .accessibilityAddTraits(on ? .isSelected : [])
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.muted)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(last ? Theme.sprout : Theme.border, lineWidth: last ? 3 : 2))
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(concept.title). \(concept.blurb)")
     }
 }
 

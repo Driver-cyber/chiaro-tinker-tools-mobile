@@ -53,6 +53,29 @@ final class DeckTests: XCTestCase {
         }
     }
 
+    /// Every blank gets filled when the card is answered: no ? or ___ left, and
+    /// the filled-in part is the right answer (letters fill the word itself).
+    func testBlanksFillInWithTheAnswer() {
+        for mode in Modes.all {
+            guard case .cards(let deal) = mode.play else { continue }
+            for _ in 0..<40 {
+                for c in deal() {
+                    guard case .choice(_, let prompt, let o, _) = c.face, prompt.contains("?") || prompt.contains("___") else { continue }
+                    guard let s = c.solved else { XCTFail("\(mode.id): \(prompt) has no filled-in form"); continue }
+                    // A sentence may still end in its own question mark ("Can I come too?").
+                    let body = prompt.contains("___") && s.text.hasSuffix("?") ? String(s.text.dropLast()) : s.text
+                    XCTAssertFalse(body.contains("?") || body.contains("___"), "\(mode.id): \(s.text)")
+                    let answer = o[c.answer]
+                    XCTAssertTrue(answer.hasSuffix(s.fill) || answer == s.fill || s.fill.contains("clap"), "\(mode.id): \(answer) vs \(s.fill)")
+                    if prompt.contains("?") && !prompt.contains(" ") {
+                        // "?og", "c?t", "??ip", "?at": the blank is replaced in place.
+                        XCTAssertEqual(s.text.count, prompt.count - prompt.filter { $0 == "?" }.count + s.fill.count, "\(mode.id): \(prompt) → \(s.text)")
+                    }
+                }
+            }
+        }
+    }
+
     func testSounds() {
         var g = SeededGenerator(seed: 1)
         for _ in 0..<300 {
