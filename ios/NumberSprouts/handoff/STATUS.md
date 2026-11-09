@@ -26,3 +26,5 @@ concept became **Draw** (M2.5), built and approved in chat.
 read-aloud or sound at all** in Number Sprouts (finishing a picture paused his
 music). **v2 idea:** a quiet, catchy theme-music loop.
 **Next after M4's first install:** a sibling app for letters, reading and language (Chad, 2026-10-30), with its brief and decisions still to come.
+
+**Chad after the kids played (2026-11-08), done:** Draw was the hit, so home is Paint by Number (To 10 / To 20) with Dot to Dot, Draw your own and a Number games tile one level down. Eight more pictures: apple tree, car, flower, snowman, and four scenes with little characters (tea party, rainy day duck, snail's mushroom house, camping fox) whose faces are pre-drawn details.

@@ -145,6 +145,7 @@ private struct PictureThumb: View {
                         r.path(side).fill(finished ? r.paint.color : Theme.border.opacity(0.35))
                         r.path(side).stroke(Theme.muted.opacity(finished ? 0 : 0.5), lineWidth: 1)
                     }
+                    if finished { ForEach(Array(p.details.enumerated()), id: \.offset) { _, d in d.view(side) } }
                 } else if let p = Pictures.dots.first(where: { $0.id == id }) {
                     let path = DotGeometry.path(p.points.map { CGPoint(x: $0.x, y: $0.y) }, side: side, closed: true)
                     if finished { path.fill(p.paint.color.opacity(0.85)); path.stroke(Theme.text, lineWidth: 2) }
@@ -223,12 +224,18 @@ struct ColorByNumberView: View {
                         .fill(isFilled ? r.paint.color : Theme.card)
                         .animation(.easeOut(duration: 0.35), value: isFilled)
                     r.path(side).stroke(Theme.muted.opacity(finished ? 0 : 0.7), lineWidth: 1.5)
-                    if !isFilled && i < problems.count {
+                }
+                ForEach(Array(picture.details.enumerated()), id: \.offset) { _, d in d.view(side) }
+                // Labels go on top of everything, on a soft backing so a face under one can't hide it.
+                ForEach(Array(picture.regions.enumerated()), id: \.offset) { i, r in
+                    if !filled.contains(i) && i < problems.count {
                         Text(problems[i])
                             .font(Theme.round(Swift.max(10, Swift.min(18, r.room * side / 10 / 3.4)), .bold))
                             .foregroundStyle(Theme.text)
                             .lineLimit(1)
                             .fixedSize()
+                            .padding(.horizontal, 3)
+                            .background(Theme.card.opacity(picture.details.isEmpty ? 0 : 0.8), in: Capsule())
                             .position(i < labels.count ? CGPoint(x: labels[i].x * side / 10, y: labels[i].y * side / 10) : r.center(side))
                             .modifier(Shake(amount: shakeRegion == i && !reduceMotion ? 6 : 0, animatableData: shakes))
                     }

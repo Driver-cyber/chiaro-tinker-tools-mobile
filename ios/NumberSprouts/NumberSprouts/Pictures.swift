@@ -22,6 +22,49 @@ struct Paint: Equatable {
     static let green = Paint(name: "green", color: .dynamic(dark: 0x4CC97F, light: 0x34A853))
     static let brown = Paint(name: "brown", color: .dynamic(dark: 0xA8754A, light: 0x8B5A33))
     static let white = Paint(name: "white", color: .dynamic(dark: 0xEDEDF2, light: 0xFFFFFF))
+    static let pink = Paint(name: "pink", color: .dynamic(dark: 0xF7A1C4, light: 0xF48FB8))
+}
+
+/// A finishing touch drawn over a picture and never painted: eyes, smiles,
+/// rosy cheeks, raindrops, stars. Faces show from the start, so the kids know
+/// who they're coloring.
+struct Detail {
+    enum Kind {
+        case dot(CGPoint, CGFloat)
+        case smile(CGPoint, CGFloat)        // a little ‿, also used for sleepy eyes
+        case line([CGPoint])
+    }
+    let kind: Kind
+    let color: Color
+
+    static let ink = Color(red: 0.16, green: 0.16, blue: 0.22)
+    static let blush = Color(red: 1, green: 0.42, blue: 0.55).opacity(0.5)
+
+    static func eye(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat = 0.16) -> Detail { Detail(kind: .dot(CGPoint(x: x, y: y), r), color: ink) }
+    static func cheek(_ x: CGFloat, _ y: CGFloat) -> Detail { Detail(kind: .dot(CGPoint(x: x, y: y), 0.22), color: blush) }
+    static func dot(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat, _ color: Color) -> Detail { Detail(kind: .dot(CGPoint(x: x, y: y), r), color: color) }
+    static func smile(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat = 0.22) -> Detail { Detail(kind: .smile(CGPoint(x: x, y: y), w), color: ink) }
+    static func line(_ pts: [(CGFloat, CGFloat)], _ color: Color = ink) -> Detail { Detail(kind: .line(pts.map { CGPoint(x: $0.0, y: $0.1) }), color: color) }
+
+    /// Drawn in a square of side `side`, y flipped like the regions.
+    func view(_ side: CGFloat) -> some View {
+        let u = side / 10
+        func pt(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x * u, y: (10 - p.y) * u) }
+        var path = Path()
+        var filled = false
+        switch kind {
+        case .dot(let c, let r):
+            path = Path(ellipseIn: CGRect(x: (c.x - r) * u, y: (10 - c.y - r) * u, width: 2 * r * u, height: 2 * r * u))
+            filled = true
+        case .smile(let c, let w):
+            path.addArc(center: pt(c), radius: w * u, startAngle: .degrees(20), endAngle: .degrees(160), clockwise: false)
+        case .line(let pts):
+            path.addLines(pts.map(pt))
+        }
+        return Group {
+            if filled { path.fill(color) } else { path.stroke(color, style: StrokeStyle(lineWidth: max(1.5, 0.11 * u), lineCap: .round, lineJoin: .round)) }
+        }
+    }
 }
 
 struct Region {
@@ -104,6 +147,7 @@ struct ColorPicture: Identifiable {
     let id: String
     let name: String          // "rocket"
     let regions: [Region]     // back to front; the first is the background
+    var details: [Detail] = []  // faces and finishing touches, on top, never painted
 
     var paints: [Paint] {
         var out: [Paint] = []
@@ -246,6 +290,86 @@ enum Pictures {
             .circle(1.6, 8.4, 0.4, .yellow),
             .circle(8.4, 8.8, 0.4, .yellow),
             .circle(8.2, 5.2, 0.4, .yellow),
+        ]),
+
+        // Scenes: little characters with a bit of story. Faces are details.
+        ColorPicture(id: "teaparty", name: "tea party", regions: [
+            .rect(0, 0, 10, 10, .sky),
+            .poly([(0.3, 10), (1.7, 10), (1, 8.7)], .yellow),
+            .poly([(4.3, 10), (5.7, 10), (5, 8.7)], .yellow),
+            .poly([(8.3, 10), (9.7, 10), (9, 8.7)], .yellow),
+            .circle(1.3, 7.5, 0.65, .brown),
+            .circle(3.5, 7.5, 0.65, .brown),
+            .circle(2.4, 3.9, 1.5, .brown),
+            .circle(2.4, 6.2, 1.5, .brown),
+            .poly([(6.8, 7.1), (7, 9.7), (7.8, 7.3)], .pink),
+            .poly([(8.2, 7.3), (9, 9.7), (9.2, 7.1)], .pink),
+            .circle(8, 3.9, 1.5, .white),
+            .circle(8, 6.2, 1.5, .white),
+            .rect(0.6, 0, 9.4, 3.2, .pink),
+            .circle(5, 4.4, 1.15, .orange),
+            .poly([(5.9, 4.1), (6.7, 5.1), (6.3, 5.4), (5.8, 4.8)], .orange),
+            .poly([(4.3, 5.4), (5.7, 5.4), (5, 6.3)], .orange),
+            .rect(3.1, 3.2, 4.2, 4.3, .yellow),
+            .rect(5.9, 3.2, 7, 4.3, .yellow),
+        ], details: [
+            .eye(1.9, 6.45), .eye(2.9, 6.45), .eye(2.4, 5.95, 0.17), .smile(2.4, 5.75, 0.2), .cheek(1.5, 5.95), .cheek(3.3, 5.95),
+            .eye(7.5, 6.45), .eye(8.5, 6.45), .smile(8, 5.85, 0.2), .cheek(7.1, 5.95), .cheek(8.9, 5.95),
+            .eye(4.6, 4.6, 0.13), .eye(5.4, 4.6, 0.13), .smile(5, 4.3, 0.17),
+        ]),
+        ColorPicture(id: "rainduck", name: "rainy day duck", regions: [
+            .rect(0, 0, 10, 10, .sky),
+            .circle(2, 9.2, 1.3, .white),
+            .circle(3.7, 9.6, 1.1, .white),
+            .circle(7.6, 9.4, 1.3, .white),
+            .poly([(0.8, 0.3), (9.2, 0.3), (8.4, 1.5), (1.6, 1.5)], .blue),
+            .poly([(2.4, 6.6), (3.5, 7.9), (5.1, 8.5), (6.7, 7.9), (7.8, 6.6)], .red),
+            .circle(4.6, 2.9, 1.7, .yellow),
+            .circle(5.8, 5.1, 1.15, .yellow),
+            .poly([(3.2, 3.3), (5.1, 3.1), (4, 1.9)], .white),
+            .poly([(6.7, 5.3), (8.2, 4.9), (6.7, 4.3)], .orange),
+        ], details: [
+            .line([(4.3, 6.6), (4.3, 4.5), (4, 4.2), (3.7, 4.4)]),
+            .eye(6.1, 5.5, 0.17), .cheek(6.35, 4.85),
+            .line([(1.3, 7.5), (1.1, 7)], .blue), .line([(8.9, 7.2), (8.7, 6.7)], .blue), .line([(1.6, 5.1), (1.4, 4.6)], .blue),
+            .line([(8.7, 3.7), (8.5, 3.2)], .blue), .line([(9.3, 5.7), (9.1, 5.2)], .blue), .line([(0.9, 2.8), (0.7, 2.3)], .blue),
+        ]),
+        ColorPicture(id: "mushroom", name: "snail's mushroom house", regions: [
+            .rect(0, 0, 10, 10, .sky),
+            .rect(0, 0, 10, 2.2, .green),
+            .rect(2, 2.2, 5.6, 5.6, .white),
+            .poly([(0.8, 5.4), (1.6, 7.2), (3.8, 8.6), (6, 7.2), (6.8, 5.4)], .red),
+            .rect(3.3, 2.2, 4.6, 4.2, .orange),
+            .circle(2.75, 4.5, 0.5, .yellow),
+            .circle(2.4, 6.5, 0.55, .white),
+            .circle(4.9, 7.2, 0.6, .white),
+            .circle(8.6, 8.7, 0.9, .yellow),
+            .poly([(6, 2.2), (9.7, 2.2), (9.7, 3.1), (9.1, 3.4), (8.6, 2.9)], .yellow),
+            .circle(7.6, 3.3, 1, .orange),
+        ], details: [
+            .dot(4.35, 3.2, 0.1, Detail.ink),
+            .line([(7.6, 3.3), (7.9, 3.3), (7.9, 3.6), (7.4, 3.7), (7.2, 3.2), (7.6, 2.8), (8.2, 3)]),
+            .line([(9.2, 3.3), (9.3, 4)]), .eye(9.32, 4.05, 0.13), .smile(9.25, 2.85, 0.15),
+            .smile(8.6, 8.75, 0.25), .smile(8.25, 8.95, 0.12), .smile(8.95, 8.95, 0.12),
+        ]),
+        ColorPicture(id: "campfox", name: "camping fox", regions: [
+            .rect(0, 0, 10, 10, .navy),
+            .rect(0, 0, 10, 2.4, .green),
+            .circle(8.3, 8.4, 1, .yellow),
+            .poly([(0.6, 2.4), (5, 2.4), (2.8, 6.4)], .orange),
+            .poly([(2.2, 2.4), (3.4, 2.4), (2.8, 4.2)], .brown),
+            .rect(5.4, 1, 8, 2, .brown),
+            .poly([(5.6, 2), (7.8, 2), (6.7, 4.6)], .red),
+            .poly([(6.2, 2), (7.2, 2), (6.7, 3.4)], .yellow),
+            .circle(9, 3.1, 0.95, .orange),
+            .poly([(8.05, 5), (8.35, 6), (8.8, 5)], .orange),
+            .poly([(9.2, 5), (9.65, 6), (9.95, 5)], .orange),
+            .poly([(8, 5), (10, 5), (9, 3.6)], .orange),
+        ], details: [
+            .dot(1.2, 8.8, 0.12, .white), .dot(3, 9.3, 0.12, .white), .dot(5.2, 8.6, 0.12, .white),
+            .dot(6.4, 9.5, 0.12, .white), .dot(1.8, 7.4, 0.12, .white), .dot(4.4, 7.6, 0.12, .white),
+            .smile(8.6, 4.6, 0.15), .smile(9.4, 4.6, 0.15), .eye(9, 3.8, 0.13),
+            .smile(8.0, 8.55, 0.15), .smile(8.6, 8.55, 0.15),
         ]),
     ]
 
