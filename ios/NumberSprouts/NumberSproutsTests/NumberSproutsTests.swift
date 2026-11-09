@@ -300,3 +300,87 @@ final class ProfileTests: XCTestCase {
         XCTAssertEqual(m.profiles.count, 1)
     }
 }
+
+final class QuestTests: XCTestCase {
+    private func operands(_ p: QuestProblem) -> (Int, String, Int) {
+        let parts = p.text.split(separator: " ").map(String.init)
+        return (Int(parts[0])!, parts[1], Int(parts[2])!)
+    }
+
+    func testProblemsFitTheirTier() {
+        var g = SeededGenerator(seed: 4)
+        for tier in QuestTier.allCases {
+            for _ in 0..<500 {
+                let p = QuestMath.make(tier, using: &g)
+                let (a, op, b) = operands(p)
+                let value = op == "+" ? a + b : op == "−" ? a - b : a * b
+                XCTAssertEqual(value, p.answer, p.text)
+                XCTAssertTrue((0...100).contains(p.answer), p.text)
+                XCTAssertEqual(p.options.count, 4, p.text); XCTAssertEqual(Set(p.options).count, 4, p.text)
+                XCTAssertTrue(p.options.contains(p.answer)); XCTAssertTrue(p.options.allSatisfy { $0 >= 0 })
+                XCTAssertFalse(p.trick.isEmpty)
+                switch tier {
+                case .within10: XCTAssertTrue(a <= 10 && b <= 10 && p.answer <= 10, p.text)
+                case .within20: XCTAssertTrue(a <= 20 && b <= 20 && p.answer <= 20, p.text)
+                case .to100:
+                    // Regular battles: never two "messy" two-digit numbers together, never ×.
+                    XCTAssertNotEqual(op, "×", p.text)
+                    XCTAssertTrue(b < 10 || (a % 10 == 0 && b % 10 == 0), p.text)
+                case .bossA, .bossB:
+                    XCTAssertTrue(op == "×" ? b % 10 == 0 : (a >= 10 && b >= 10), "boss problems are two-digit: \(p.text)")
+                }
+                if tier == .bossB && op == "+" { XCTAssertGreaterThanOrEqual(a % 10 + b % 10, 10, "the final boss carries: \(p.text)") }
+            }
+        }
+    }
+
+    func testTricksExplainTheAnswer() {
+        var g = SeededGenerator(seed: 2)
+        for _ in 0..<200 {
+            let p = QuestMath.make(.bossB, using: &g)
+            XCTAssertTrue(p.trick.hasSuffix("\(p.answer)."), "\(p.text): \(p.trick)")
+        }
+    }
+
+    func testRightAnswersWinAndBossesAttackWithBossProblems() {
+        var g = SeededGenerator(seed: 7)
+        var asked: [QuestTier] = []
+        let boss = Quest.stops.first { $0.foe.boss }!
+        let b = Battle(stop: boss, buddy: Quest.buddies[0]) { t in asked.append(t); return QuestMath.make(t, using: &g) }
+        b.begin()
+        var guardCount = 0
+        while b.phase != .won && guardCount < 50 {
+            XCTAssertEqual(b.phase, .asking)
+            XCTAssertTrue(b.answer(b.problem.answer))
+            b.next(); guardCount += 1
+        }
+        XCTAssertEqual(b.phase, .won); XCTAssertEqual(b.buddyHP, Battle.hearts, "dodging every attack costs nothing")
+        XCTAssertEqual(guardCount, boss.foe.hp * 2, "one hit per buddy turn")
+        // asked[0] is the problem dealt at init; after that, turns alternate foe then buddy.
+        let turns = Array(asked.dropFirst())
+        for (i, t) in turns.enumerated() { XCTAssertEqual(t, i % 2 == 0 ? boss.bossTier : boss.tier) }
+    }
+
+    func testMissesNeverEndTheQuest() {
+        let b = Battle(stop: Quest.stops[0], buddy: Quest.buddies[1])
+        b.begin()
+        var n = 0
+        while b.phase != .lost && n < 50 { b.answer(b.problem.answer + 1); b.next(); n += 1 }
+        XCTAssertEqual(b.phase, .lost); XCTAssertEqual(b.foeHP, Quest.stops[0].foe.hp, "misses never hurt the foe")
+        b.restart()
+        XCTAssertEqual(b.phase, .intro); XCTAssertEqual(b.buddyHP, Battle.hearts)
+    }
+
+    func testQuestProgressIsSavedPerPlayer() {
+        let name = "NSQuest-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        let m = AppModel(store: d)
+        m.save(Profile(name: "Sam", icon: "🦊")); m.save(Profile(name: "Ada", icon: "🐢"))
+        m.choose(m.profiles[0])
+        m.saveQuest { $0.buddy = "cinder"; $0.cleared = 3 }
+        let again = AppModel(store: d)
+        XCTAssertEqual(again.profiles[0].quest, QuestSave(buddy: "cinder", cleared: 3))
+        XCTAssertEqual(again.profiles[1].quest, QuestSave())
+        d.removePersistentDomain(forName: name)
+    }
+}
