@@ -50,7 +50,7 @@ struct RoundView: View {
         VStack(spacing: 0) {
             TopBar(count: round.count, index: round.index, done: round.phase == .right || round.phase == .done) {
                 Reader.shared.say(round.card.speech)
-            } close: { Reader.shared.stop(); model.screen = .home }
+            } close: { Reader.shared.stop(); model.goBack() }
             switch round.card.face {
             case .choice(let picture, let prompt, let options, let listen): choiceArea(picture, prompt, options, listen)
             case .spell(let picture, let word, let tiles): spellArea(picture, word, tiles)
@@ -69,7 +69,7 @@ struct RoundView: View {
         }
         .overlay {
             if round.phase == .done {
-                SummaryView(stars: round.stars, firstTry: round.firstTry, count: round.count, again: again) { model.screen = .home }
+                SummaryView(stars: round.stars, firstTry: round.firstTry, count: round.count, again: again) { model.goBack() }
                     .transition(.opacity)
             }
         }
@@ -80,7 +80,9 @@ struct RoundView: View {
             if phase == .right {
                 bursts += 1
                 Task {
-                    try? await Task.sleep(for: .milliseconds(reduceMotion ? 700 : 1000))
+                    // A filled-in blank stays up a little longer, so the finished word can be read.
+                    let extra = round.card.solved == nil ? 0 : 500
+                    try? await Task.sleep(for: .milliseconds((reduceMotion ? 700 : 1000) + extra))
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { round.advance(); typed = [] }
                 }
             }
@@ -120,7 +122,7 @@ struct RoundView: View {
     private func choiceArea(_ picture: String, _ prompt: String, _ options: [String], _ listen: Bool) -> some View {
         VStack(spacing: 0) {
             Spacer(minLength: 12)
-            PromptCard(picture: picture, prompt: prompt, listen: listen, glowing: answered) { Reader.shared.say(round.card.speech) }
+            PromptCard(picture: picture, prompt: prompt, listen: listen, glowing: answered, solved: answered ? round.card.solved : nil) { Reader.shared.say(round.card.speech) }
                 .id(round.index)
                 .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
                 .modifier(Shake(amount: reduceMotion ? 0 : 10, animatableData: shakes))
@@ -260,6 +262,7 @@ struct PromptCard: View {
     let prompt: String
     let listen: Bool
     let glowing: Bool
+    var solved: Solved? = nil
     let read: () -> Void
     @State private var popped = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -278,12 +281,24 @@ struct PromptCard: View {
             } else if !picture.isEmpty {
                 Text(picture).font(.system(size: 88)).accessibilityHidden(true)
             }
-            Text(prompt)
-                .font(Theme.round(listen ? 22 : (prompt.count > 14 ? 30 : 48)))
-                .foregroundStyle(listen ? Theme.muted : Theme.text)
-                .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.5)
-                .lineLimit(2)
+            if let solved {
+                // The answer drops into the blank, lit in the right-answer colour.
+                (Text(solved.before) + Text(solved.fill).foregroundColor(Theme.right) + Text(solved.after))
+                    .font(Theme.round(solved.text.count > 14 ? 30 : 48))
+                    .foregroundStyle(Theme.text)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(3)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    .accessibilityLabel(solved.text)
+            } else {
+                Text(prompt)
+                    .font(Theme.round(listen ? 22 : (prompt.count > 14 ? 30 : 48)))
+                    .foregroundStyle(listen ? Theme.muted : Theme.text)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(2)
+            }
         }
         .scaleEffect(popped ? 1 : 0.6)
         .padding(.vertical, 26)

@@ -7,3 +7,5 @@
 
 **Decided by Chad:** name *Lingo Sprouts*; all four practice concepts; a Story
 mode (build a sentence). Speech is optional and must never pause his music.
+
+**Chad after the kids played (2026-11-08), done:** home is just the five topics, each opening its games (Back returns to the topic); a right answer fills the blank in place ("?og" becomes "dog" with the d lit, "kit + e = kite").

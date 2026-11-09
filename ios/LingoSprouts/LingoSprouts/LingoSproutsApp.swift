@@ -24,7 +24,8 @@ struct RootView: View {
             Theme.bg.ignoresSafeArea()
             switch model.screen {
             case .who: WhoView().transition(.opacity)
-            case .home: HomeView().transition(.move(edge: .trailing).combined(with: .opacity))
+            case .home: HomeView().transition(.move(edge: .leading).combined(with: .opacity))
+            case .topic(let c): TopicView(concept: c).transition(.move(edge: .trailing).combined(with: .opacity))
             case .play(let id): PlayView(modeID: id).transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

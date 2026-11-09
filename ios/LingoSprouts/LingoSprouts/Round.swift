@@ -10,6 +10,15 @@
 import Foundation
 import UIKit
 
+/// A prompt with its blank filled in, shown once the card is answered right,
+/// so the question reads complete: "?og" becomes "dog" with the d lit.
+struct Solved: Equatable {
+    var before = ""
+    let fill: String
+    var after = ""
+    var text: String { before + fill + after }
+}
+
 struct Card: Equatable {
     enum Face: Equatable {
         /// `listen`: the question is a word to hear (sight words), so the
@@ -21,6 +30,7 @@ struct Card: Equatable {
     let answer: Int            // index of the right option; 0 for spell
     let speech: String         // what the speaker button says
     let trick: Trick
+    var solved: Solved? = nil
 }
 
 struct Trick: Equatable {

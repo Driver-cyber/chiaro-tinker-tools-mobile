@@ -21,7 +21,8 @@ enum Sounds {
                         speech: "\(w.text). What sound does \(w.text) start with?",
                         trick: Trick(headline: "\(w.text) starts with \(letter)",
                                      sentence: "Say it slowly: \(letter), \(letter), \(w.text). The first sound is \(letter).",
-                                     visual: .letters(word: w.text, picture: w.pic, lit: [0])))
+                                     visual: .letters(word: w.text, picture: w.pic, lit: [0])),
+                        solved: Solved(fill: letter, after: String(w.text.dropFirst())))
         case .last:
             let w = Words.cvc.randomElement(using: &rng)!
             let letter = String(w.text.suffix(1))
@@ -31,7 +32,8 @@ enum Sounds {
                         speech: "\(w.text). What sound does \(w.text) end with?",
                         trick: Trick(headline: "\(w.text) ends with \(letter)",
                                      sentence: "Stretch it out: \(w.text.map(String.init).joined(separator: "-")). The last sound is \(letter).",
-                                     visual: .letters(word: w.text, picture: w.pic, lit: [w.text.count - 1])))
+                                     visual: .letters(word: w.text, picture: w.pic, lit: [w.text.count - 1])),
+                        solved: Solved(before: String(w.text.dropLast()), fill: letter))
         case .blend:
             let w = Words.cvc.randomElement(using: &rng)!
             let ending = String(w.text.suffix(2)), start = String(w.text.prefix(2))
@@ -43,7 +45,8 @@ enum Sounds {
                         speech: letters.joined(separator: ", "),
                         trick: Trick(headline: letters.joined(separator: " + ") + " = \(w.text)",
                                      sentence: "Say each sound, then push them together faster and faster: \(w.text)!",
-                                     visual: .blend(letters: letters, word: w.text, picture: w.pic)))
+                                     visual: .blend(letters: letters, word: w.text, picture: w.pic)),
+                        solved: Solved(before: letters.joined(separator: " · ") + " = ", fill: w.text))
         case .digraph:
             let w = Words.digraphWords.randomElement(using: &rng)!
             let d = String(w.text.prefix(2))
@@ -52,7 +55,8 @@ enum Sounds {
                         speech: "\(w.text). Which two letters start \(w.text)?",
                         trick: Trick(headline: "\(w.text) starts with \(d)",
                                      sentence: "Two letters, one sound: \(d) in \(w.text).",
-                                     visual: .letters(word: w.text, picture: w.pic, lit: [0, 1])))
+                                     visual: .letters(word: w.text, picture: w.pic, lit: [0, 1])),
+                        solved: Solved(fill: d, after: String(w.text.dropFirst(2))))
         }
     }
 
@@ -90,7 +94,8 @@ enum Rhymes {
             return Card(face: .choice(picture: a.pic, prompt: "rhymes with \(a.text)?", options: opts, listen: false), answer: at,
                         speech: "Which one rhymes with \(a.text)?",
                         trick: Trick(headline: "\(a.text) rhymes with \(right.text)",
-                                     sentence: "They share an ending: -\(fam.ending).", visual: .rhyme(words: fam.words, ending: fam.ending)))
+                                     sentence: "They share an ending: -\(fam.ending).", visual: .rhyme(words: fam.words, ending: fam.ending)),
+                        solved: Solved(fill: right.text, after: " rhymes with \(a.text)"))
         case .family:
             let start = String(a.text.dropLast(fam.ending.count))
             let starts = Words.families.flatMap(\.words).map { String($0.text.dropLast((ending(of: $0) ?? "").count)) }
@@ -101,7 +106,8 @@ enum Rhymes {
                         trick: Trick(headline: "\(start) + \(fam.ending) = \(a.text)",
                                      sentence: "The -\(fam.ending) family: change the start, keep the ending. " +
                                                fam.words.map(\.text).joined(separator: ", ") + ".",
-                                     visual: .rhyme(words: fam.words, ending: fam.ending)))
+                                     visual: .rhyme(words: fam.words, ending: fam.ending)),
+                        solved: Solved(fill: start, after: fam.ending))
         }
     }
 
@@ -141,7 +147,8 @@ enum Reading {
                         speech: "\(w.text). Which letter is missing?",
                         trick: Trick(headline: "\(w.text) has \(vowel) in the middle",
                                      sentence: "Stretch it out, \(w.text.map(String.init).joined(separator: "-")), and listen for the middle sound: \(vowel).",
-                                     visual: .letters(word: w.text, picture: w.pic, lit: [1])))
+                                     visual: .letters(word: w.text, picture: w.pic, lit: [1])),
+                        solved: Solved(before: String(w.text.prefix(1)), fill: vowel, after: String(w.text.suffix(1))))
         case .spell:
             let w = Words.cvc.randomElement(using: &rng)!
             let letters = w.text.map(String.init)
@@ -171,7 +178,8 @@ enum WordTricks {
                         answer: n - 1, speech: "\(w.text). How many claps?",
                         trick: Trick(headline: "\(w.text): \(n) \(n == 1 ? "clap" : "claps")",
                                      sentence: "Clap each part: " + parts.joined(separator: " · ") + ".",
-                                     visual: .syllables(parts, picture: w.pic)))
+                                     visual: .syllables(parts, picture: w.pic)),
+                        solved: Solved(before: parts.joined(separator: " · ") + ": ", fill: "\(n) \(n == 1 ? "clap" : "claps")"))
         case .compound:
             let (a, b, w) = Words.compounds.randomElement(using: &rng)!
             let sharing = Words.compounds.filter { $0.2 != w && ($0.0 == a || $0.1 == b || $0.0 == b || $0.1 == a) }.map(\.2.text)
@@ -181,7 +189,8 @@ enum WordTricks {
                         speech: "\(a) plus \(b) makes?",
                         trick: Trick(headline: "\(a) + \(b) = \(w.text)",
                                      sentence: "Two small words make one big word: \(a) and \(b) make \(w.text).",
-                                     visual: .compound(a, b, w)))
+                                     visual: .compound(a, b, w)),
+                        solved: Solved(before: "\(a) + \(b) = ", fill: w.text))
         case .magicE:
             let (base, word) = Words.magicE.randomElement(using: &rng)!
             let vowel = base.first { "aeiou".contains($0) }.map(String.init) ?? "a"
@@ -192,14 +201,17 @@ enum WordTricks {
                         speech: "\(base) plus e makes?",
                         trick: Trick(headline: "\(base) + e = \(word)",
                                      sentence: "The e is magic. It doesn't make a sound, but it makes the \(vowel) say its name: \(base) becomes \(word).",
-                                     visual: .magicE(base: base, word: word)))
+                                     visual: .magicE(base: base, word: word)),
+                        solved: Solved(before: "\(base) + e = ", fill: word))
         case .soundAlike:
             let s = Words.soundAlikes.randomElement(using: &rng)!
             let opts = s.options.shuffled(using: &rng)
             return Card(face: .choice(picture: s.pic, prompt: s.sentence, options: opts, listen: false), answer: opts.firstIndex(of: s.answer)!,
                         speech: s.sentence.replacingOccurrences(of: "___", with: "blank"),
                         trick: Trick(headline: s.sentence.replacingOccurrences(of: "___", with: s.answer), sentence: s.why,
-                                     visual: .sentence(s.sentence, word: s.answer, picture: s.pic)))
+                                     visual: .sentence(s.sentence, word: s.answer, picture: s.pic)),
+                        solved: Solved(before: s.sentence.components(separatedBy: "___").first ?? "", fill: s.answer,
+                                       after: s.sentence.components(separatedBy: "___").dropFirst().joined(separator: s.answer)))
         }
     }
 

@@ -40,7 +40,7 @@ struct StoryBuilder: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
-                CircleButton(symbol: "xmark", label: "Back") { Reader.shared.stop(); model.screen = .home }
+                CircleButton(symbol: "xmark", label: "Back") { Reader.shared.stop(); model.goBack() }
                 Text("Build a story").font(Theme.round(26)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer()
                 CircleButton(symbol: "dice.fill", label: "New tiles") { deal() }
@@ -212,7 +212,7 @@ struct StoryBook: View {
         let stories = Array((model.current?.stories ?? []).reversed())
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                CircleButton(symbol: "xmark", label: "Back") { Reader.shared.stop(); model.screen = .home }
+                CircleButton(symbol: "xmark", label: "Back") { Reader.shared.stop(); model.goBack() }
                 Text("My story book").font(Theme.round(26)).foregroundStyle(Theme.text)
                 Spacer()
                 PlayerBadge()

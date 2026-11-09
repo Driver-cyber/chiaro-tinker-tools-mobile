@@ -18,6 +18,16 @@ enum Concept: String, CaseIterable, Identifiable {
         case .story: return "Story"
         }
     }
+    /// What's inside, on the topic's tile at home.
+    var blurb: String {
+        switch self {
+        case .sounds: return "First and last sounds, blending, sh and ch"
+        case .rhymes: return "Hear them, find them, word families"
+        case .words: return "Sight words, missing letters, spelling"
+        case .tricks: return "Claps, word pairs, magic e"
+        case .story: return "Make up a story and keep it"
+        }
+    }
     var symbol: String {
         switch self {
         case .sounds: return "waveform"
