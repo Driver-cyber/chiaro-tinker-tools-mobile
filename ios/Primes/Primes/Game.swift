@@ -49,14 +49,19 @@ final class Game: ObservableObject {
         self.saidPrime = saidPrime
         let right = saidPrime == isPrime
         streak = right ? streak + 1 : 0
-        freshFind = false
-        if isPrime && right && solved[n] == nil {   // the meter's one write
-            solved[n] = Game.today()
-            save()
-            freshFind = true
-        }
+        freshFind = isPrime && right && markFound(n)
         Haptics.result(right)
         screen = .answer
+    }
+
+    /// The meter's one write: a prime called right for the first time, in the
+    /// game or in Story mode. True when it's a new find.
+    @discardableResult
+    func markFound(_ p: Int) -> Bool {
+        guard PrimeEngine.isPrime(p), solved[p] == nil else { return false }
+        solved[p] = Game.today()
+        save()
+        return true
     }
 
     private func load() {

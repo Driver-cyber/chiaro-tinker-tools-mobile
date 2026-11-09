@@ -599,7 +599,7 @@ struct MoleculesScreen: View {
     @State private var atoms = [2, 2, 3]
     @State private var target = 12
 
-    private static func color(_ p: Int) -> Color {
+    static func color(_ p: Int) -> Color {
         switch p {
         case 2: return Color(UIColor(hex: 0xF2A24A))
         case 3: return .dynamic(dark: 0xEFE3CC, light: 0xDCC9A2)
@@ -609,7 +609,7 @@ struct MoleculesScreen: View {
         default: return Color(UIColor(hex: 0xE9C46A))
         }
     }
-    private static let atomInk = Color(UIColor(hex: 0x201709))      // the atoms keep their own colours in every look
+    static let atomInk = Color(UIColor(hex: 0x201709))      // the atoms keep their own colours in every look
     private static let size: [Int: CGFloat] = [2: 32, 3: 36, 5: 40, 7: 44, 11: 48, 13: 52]
 
     var body: some View {

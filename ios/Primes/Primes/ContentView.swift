@@ -90,6 +90,7 @@ struct WelcomeView: View {
     @Binding var sheet: SheetRoute?
     @Binding var style: String
     @State private var guide = false
+    @State private var story = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -139,7 +140,18 @@ struct WelcomeView: View {
                 set: { Theme.style = $0; style = $0.rawValue })) { $0.title }
                 .padding(.top, 20)
             Spacer()
+            Button { story = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                    Text("Story mode")
+                }
+            }
+            .buttonStyle(OutlineButtonStyle(accent: true, height: 54))
+            .padding(.bottom, 10)
             Button("Play") { game.deal() }.buttonStyle(FilledButtonStyle())
+        }
+        .fullScreenCover(isPresented: $story) {
+            StoryView(game: game, play: { story = false; game.deal() })
         }
         .sheet(isPresented: $guide) {
             GuideView(solved: game.solved, play: { guide = false; game.deal() })

@@ -37,6 +37,9 @@ first build is its first real compile.
 | `Primes/Game.swift` | one sitting's state + the found-primes store + haptics |
 | `Primes/ContentView.swift` | welcome / question / answer screens |
 | `Primes/Guide.swift` | How to play, then the scroll-driven why-primes tour |
+| `Primes/Story.swift` | Story mode's script: seven chapters, from One to forever (dots, the sieve, disguises, music, Euclid) |
+| `Primes/StoryView.swift` | Story mode on screen: a pinned stage that changes as you scroll, gates, chapter list |
+| `Primes/Tones.swift` | the music chapter's plucked tones (ambient audio: mixes with your music, silent on mute) |
 | `Primes/ToolFan.swift` | the ✦ corner button that fans out Roots, Prime tricks, Checklist |
 | `Primes/Sheets.swift` | Roots, Prime tricks, Checklist (+ trick detail), Primes found |
 | `Primes/Theme.swift` | the three looks (Lamp, Marginalia, Phosphor), each light and dark; button styles |

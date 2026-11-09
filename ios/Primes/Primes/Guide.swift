@@ -19,12 +19,22 @@ struct GuideView: View {
     let solved: [Int: String]
     let play: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var current: Int? = 0
+    @State private var current: Int?
+    private let start: GuideScreen
+
+    /// `start` opens the guide at a screen: Story mode links to the one each chapter is about.
+    init(solved: [Int: String], start: GuideScreen = .buttons, play: @escaping () -> Void) {
+        self.solved = solved
+        self.play = play
+        self.start = start
+        _current = State(initialValue: start.rawValue)
+    }
 
     var body: some View {
         GeometryReader { g in
             let inset = g.safeAreaInsets
             let size = CGSize(width: g.size.width + inset.leading + inset.trailing, height: g.size.height + inset.top + inset.bottom)
+            ScrollViewReader { proxy in
             ScrollView(.vertical) {
                 VStack(spacing: 0) {
                     ForEach(GuideScreen.allCases, id: \.rawValue) { s in
@@ -43,6 +53,8 @@ struct GuideView: View {
             .scrollPosition(id: $current)
             .scrollIndicators(.hidden)
             .ignoresSafeArea()
+            .task { if start != .buttons { proxy.scrollTo(start.rawValue, anchor: .top) } }
+            }
         }
         .background(Theme.bg.ignoresSafeArea())
         .overlay(alignment: .trailing) { PageDots(count: GuideScreen.allCases.count, current: current ?? 0) }
