@@ -239,6 +239,25 @@ final class ProfileTests: XCTestCase {
         return d
     }
 
+    func testBackReturnsToWhereTheGameStarted() {
+        let m = AppModel(store: freshStore())
+        m.save(Profile(name: "Ada", icon: "🦊"))
+        m.choose(m.profiles[0])
+        m.play("dr.color10", picture: "rocket")
+        XCTAssertEqual(m.screen, .play("dr.color10", picture: "rocket"), "a picture on home opens straight away")
+        m.goBack()
+        XCTAssertEqual(m.screen, .home)
+        m.screen = .games
+        m.play("tt.2")
+        m.goBack()
+        XCTAssertEqual(m.screen, .games, "a card game goes back to Number games")
+        m.screen = .dots
+        m.play("dr.steps")
+        m.goBack()
+        XCTAssertEqual(m.screen, .dots)
+        XCTAssertEqual(Concept.games.count, Concept.allCases.count - 1, "every concept but Draw is a number game")
+    }
+
     func testProfilesPersistAndKeepTheirOwnProgress() {
         let store = freshStore()
         let m = AppModel(store: store)

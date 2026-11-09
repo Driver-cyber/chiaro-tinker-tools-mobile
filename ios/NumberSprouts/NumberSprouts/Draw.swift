@@ -31,20 +31,27 @@ struct DrawView: View {
     @EnvironmentObject private var model: AppModel
     let mode: Mode
     let kind: DrawKind
+    /// A picture picked on the home screen opens straight away, and its Back goes home.
+    let start: String?
     @State private var picture: String?
+
+    init(mode: Mode, kind: DrawKind, start: String? = nil) {
+        self.mode = mode; self.kind = kind; self.start = start
+        _picture = State(initialValue: start)
+    }
 
     var body: some View {
         if kind == .explore {
-            ExploreView { model.screen = .home }
+            ExploreView { model.goBack() }
         } else if let id = picture {
             switch kind {
             case .color(let max):
                 if let p = Pictures.color.first(where: { $0.id == id }) {
-                    ColorByNumberView(picture: p, max: max, done: { finish(id) }, next: { advance(id) }, close: { picture = nil }).id(id)
+                    ColorByNumberView(picture: p, max: max, done: { finish(id) }, next: { advance(id) }, close: back).id(id)
                 }
             default:
                 if let p = Pictures.dots.first(where: { $0.id == id }) {
-                    DotToDotView(picture: p, steps: kind == .dotSteps, done: { finish(id) }, next: { advance(id) }, close: { picture = nil }).id(id)
+                    DotToDotView(picture: p, steps: kind == .dotSteps, done: { finish(id) }, next: { advance(id) }, close: back).id(id)
                 }
             }
         } else {
@@ -56,6 +63,8 @@ struct DrawView: View {
         if case .color = kind { return Pictures.color.map { ($0.id, $0.name) } }
         return Pictures.dots.map { ($0.id, $0.name) }
     }
+
+    private func back() { if start != nil { model.goBack() } else { picture = nil } }
 
     private func finish(_ id: String) { model.recordPicture("\(mode.id)/\(id)") }
 
@@ -69,7 +78,7 @@ struct DrawView: View {
         let done = model.current?.pictures ?? []
         return VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                CircleButton(symbol: "xmark", label: "Back") { model.screen = .home }
+                CircleButton(symbol: "xmark", label: "Back") { model.goBack() }
                 Text(mode.title).font(Theme.round(26)).foregroundStyle(Theme.text).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer()
                 PlayerBadge()
@@ -79,31 +88,45 @@ struct DrawView: View {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
                     ForEach(ids, id: \.id) { item in
-                        let finished = done.contains("\(mode.id)/\(item.id)")
-                        Button { picture = item.id; Haptics.tick() } label: {
-                            VStack(spacing: 10) {
-                                PictureThumb(kind: kind, id: item.id, finished: finished)
-                                    .frame(width: 120, height: 120)
-                                Text(finished ? item.name.capitalized : "?")
-                                    .font(Theme.round(20))
-                                    .foregroundStyle(Theme.text)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 176)
-                            .background(Theme.card, in: RoundedRectangle(cornerRadius: 26))
-                            .overlay(RoundedRectangle(cornerRadius: 26).stroke(finished ? Theme.sprout : Theme.border, lineWidth: finished ? 3 : 2))
-                            .overlay(alignment: .topTrailing) {
-                                if finished {
-                                    Image(systemName: "checkmark.circle.fill").font(.system(size: 28)).foregroundStyle(Theme.sprout).padding(10)
-                                }
-                            }
+                        PictureCard(kind: kind, id: item.id, name: item.name, finished: done.contains("\(mode.id)/\(item.id)")) {
+                            picture = item.id
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(finished ? "\(item.name), finished" : "A mystery picture")
                     }
                 }
             }
         }
         .padding(.horizontal, 20)
+    }
+}
+
+/// One picture to pick: a mystery outline until it's finished, then itself with a check.
+struct PictureCard: View {
+    let kind: DrawKind
+    let id: String
+    let name: String
+    let finished: Bool
+    let pick: () -> Void
+
+    var body: some View {
+        Button { pick(); Haptics.tick() } label: {
+            VStack(spacing: 10) {
+                PictureThumb(kind: kind, id: id, finished: finished)
+                    .frame(width: 120, height: 120)
+                Text(finished ? name.capitalized : "?")
+                    .font(Theme.round(20))
+                    .foregroundStyle(Theme.text)
+            }
+            .frame(maxWidth: .infinity, minHeight: 176)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(finished ? Theme.sprout : Theme.border, lineWidth: finished ? 3 : 2))
+            .overlay(alignment: .topTrailing) {
+                if finished {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 28)).foregroundStyle(Theme.sprout).padding(10)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(finished ? "\(name), finished" : "A mystery picture")
     }
 }
 
@@ -122,6 +145,7 @@ private struct PictureThumb: View {
                         r.path(side).fill(finished ? r.paint.color : Theme.border.opacity(0.35))
                         r.path(side).stroke(Theme.muted.opacity(finished ? 0 : 0.5), lineWidth: 1)
                     }
+                    if finished { ForEach(Array(p.details.enumerated()), id: \.offset) { _, d in d.view(side) } }
                 } else if let p = Pictures.dots.first(where: { $0.id == id }) {
                     let path = DotGeometry.path(p.points.map { CGPoint(x: $0.x, y: $0.y) }, side: side, closed: true)
                     if finished { path.fill(p.paint.color.opacity(0.85)); path.stroke(Theme.text, lineWidth: 2) }
@@ -200,12 +224,18 @@ struct ColorByNumberView: View {
                         .fill(isFilled ? r.paint.color : Theme.card)
                         .animation(.easeOut(duration: 0.35), value: isFilled)
                     r.path(side).stroke(Theme.muted.opacity(finished ? 0 : 0.7), lineWidth: 1.5)
-                    if !isFilled && i < problems.count {
+                }
+                ForEach(Array(picture.details.enumerated()), id: \.offset) { _, d in d.view(side) }
+                // Labels go on top of everything, on a soft backing so a face under one can't hide it.
+                ForEach(Array(picture.regions.enumerated()), id: \.offset) { i, r in
+                    if !filled.contains(i) && i < problems.count {
                         Text(problems[i])
                             .font(Theme.round(Swift.max(10, Swift.min(18, r.room * side / 10 / 3.4)), .bold))
                             .foregroundStyle(Theme.text)
                             .lineLimit(1)
                             .fixedSize()
+                            .padding(.horizontal, 3)
+                            .background(Theme.card.opacity(picture.details.isEmpty ? 0 : 0.8), in: Capsule())
                             .position(i < labels.count ? CGPoint(x: labels[i].x * side / 10, y: labels[i].y * side / 10) : r.center(side))
                             .modifier(Shake(amount: shakeRegion == i && !reduceMotion ? 6 : 0, animatableData: shakes))
                     }

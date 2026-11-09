@@ -25,7 +25,9 @@ struct RootView: View {
             switch model.screen {
             case .who: WhoView().transition(.opacity)
             case .home: HomeView().transition(.move(edge: .trailing).combined(with: .opacity))
-            case .play(let id): PlayView(modeID: id).transition(.move(edge: .bottom).combined(with: .opacity))
+            case .games: GamesView().transition(.move(edge: .trailing).combined(with: .opacity))
+            case .dots: DotsView().transition(.move(edge: .trailing).combined(with: .opacity))
+            case .play(let id, let picture): PlayView(modeID: id, picture: picture).transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: model.screen)
