@@ -316,6 +316,11 @@ enum Sign: Equatable {
 
 struct TilesBoard: View {
     @ObservedObject var game: MakeTrueGame
+    // The puzzle this board was made for. A board on its way out (switching
+    // level or view) must never read the next puzzle's numbers.
+    let numbers: [Int]
+    let level: MTLevel
+    let puzzle: Int
     let targets: [String: CGRect]
     @Binding var hover: String?
     @State private var nums: [Int?]
@@ -326,11 +331,12 @@ struct TilesBoard: View {
 
     init(game: MakeTrueGame, targets: [String: CGRect], hover: Binding<String?>) {
         self.game = game; self.targets = targets; _hover = hover
-        _nums = State(initialValue: Array(repeating: nil, count: game.numbers.count))
-        _signs = State(initialValue: Array(repeating: nil, count: game.numbers.count - 1))
+        numbers = game.numbers; level = game.level; puzzle = game.puzzleID
+        _nums = State(initialValue: Array(repeating: nil, count: numbers.count))
+        _signs = State(initialValue: Array(repeating: nil, count: numbers.count - 1))
     }
 
-    private var bankSigns: [Sign] { game.level.ops.map { .op($0) } + [.equals] }
+    private var bankSigns: [Sign] { level.ops.map { .op($0) } + [.equals] }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -366,8 +372,8 @@ struct TilesBoard: View {
                         .accessibilityAddTraits(.isButton)
                     }
                 }
-                NumberBank(numbers: game.numbers, used: Set(nums.compactMap { $0 }), targets: targets, hover: $hover,
-                           size: game.numbers.count > 3 ? 62 : 70,
+                NumberBank(numbers: numbers, used: Set(nums.compactMap { $0 }), targets: targets, hover: $hover,
+                           size: numbers.count > 3 ? 62 : 70,
                            accept: { $0.hasPrefix("n") }, drop: { place($0, $1) }, tap: tapNumber)
             }
         }
@@ -378,9 +384,9 @@ struct TilesBoard: View {
     private func numberSpace(_ i: Int, _ w: CGFloat) -> some View {
         Group {
             if let k = nums[i] {
-                MTChip(text: "\(game.numbers[k])", size: w, glow: glow)
+                MTChip(text: "\(numbers[k])", size: w, glow: glow)
                     .onTapGesture { nums[i] = nil; Haptics.tick() }
-                    .accessibilityLabel("\(game.numbers[k]). Tap to take it off")
+                    .accessibilityLabel("\(numbers[k]). Tap to take it off")
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             } else {
                 MTSlot(size: w, hot: hover == "n\(i)").accessibilityLabel("Empty number space")
@@ -426,7 +432,7 @@ struct TilesBoard: View {
 
     private func check() {
         guard nums.allSatisfy({ $0 != nil }), signs.allSatisfy({ $0 != nil }) else { return }
-        let values = nums.map { game.numbers[$0!] }
+        let values = nums.map { numbers[$0!] }
         let eq = signs.indices.filter { signs[$0] == .equals }
         guard eq.count == 1, let at = eq.first else {
             game.say(eq.isEmpty ? "It needs an = sign somewhere" : "Use just one = sign", .miss)
@@ -435,6 +441,7 @@ struct TilesBoard: View {
         func ops(_ r: Range<Int>) -> [Op] { r.map { if case .op(let o) = signs[$0]! { return o } else { return .plus } } }
         let l = Side(nums: Array(values[...at]), ops: ops(0..<at))
         let r = Side(nums: Array(values[(at + 1)...]), ops: ops((at + 1)..<signs.count))
+        guard game.puzzleID == puzzle else { return }
         switch game.submit(l, r) {
         case .miss: miss()
         case .newWay, .again:
