@@ -24,6 +24,25 @@ the hood the modes still map to the brief's Sprout → Grow → Stretch.
 | Numbers to 20 | Grow | 1–20, the numeral only |
 | Last digit | Stretch | 10–999; past 20 the trick is "look at the last digit" |
 
+## Make It True
+
+A few numbers; put them in order with signs between until the math is true
+(1, 1, 2 → 1 + 1 = 2, or 2 − 1 = 1). Every true order counts as a way, so
+3 × 5 = 15 and 15 ÷ 3 = 5 are both found; the same way with its sides swapped
+is not a new one. A star for each new way.
+
+| Level | Numbers | Signs |
+|---|---|---|
+| Easy | three single digits | + − |
+| Medium | adds one double digit | + − × ÷ |
+| Hard | four numbers: 2 × 4 + 3 = 11, or 2 + 6 = 5 + 3 | + − × ÷, × and ÷ first |
+
+Three ways to see the same puzzle, switchable at any time: **Tiles** (drag
+numbers and signs, = included, into a strip), **Scale** (= means both pans weigh
+the same; the beam tips as you go) and **Machine** (pick what should come out,
+turn the dials, pull the lever). Every Hard puzzle has a three-and-one way, so
+the Machine can always solve it.
+
 ## Layout
 
 | Path | What |
@@ -32,6 +51,8 @@ the hood the modes still map to the brief's Sprout → Grow → Stretch.
 | `NumberSprouts/Round.swift` | the shared Card, one round of ten, choices, haptics |
 | `NumberSprouts/EvenOdd.swift`, `Compare.swift`, `AddSub.swift`, `Times.swift` | the card engines (seedable) |
 | `NumberSprouts/Pictures.swift`, `Draw.swift`, `DotToDot.swift` | Draw: the pictures, Color by Number, Dot to Dot and Explore |
+| `NumberSprouts/MakeTrue.swift` | Make It True: puzzles, every true way, why a try isn't true |
+| `NumberSprouts/MakeTrueView.swift`, `MakeTrueBoards.swift` | its screen, and the Tiles, Scale and Machine boards |
 | `NumberSprouts/Profiles.swift` | kid profiles and per-profile progress (`AppModel`) |
 | `NumberSprouts/WhoView.swift` | "Who's playing?", add and edit a player |
 | `NumberSprouts/HomeView.swift` | concept bar, mode tiles, the player badge |

@@ -42,6 +42,9 @@ struct HomeView: View {
                     WideTile(title: "Math Quest", detail: "Battle creatures with math and bring home the Wishing Star", symbol: "shield.lefthalf.filled") {
                         model.screen = .quest; Haptics.tick()
                     }
+                    WideTile(title: "Make It True", detail: "Move numbers and signs until the math is true", symbol: "equal.square.fill") {
+                        model.screen = .makeTrue; Haptics.tick()
+                    }
                     HStack(spacing: 14) {
                         SquareTile(title: "Dot to Dot", art: "→↑") { model.screen = .dots; Haptics.tick() }
                         SquareTile(title: "Draw your own", art: "✏️") { model.play("dr.explore") }

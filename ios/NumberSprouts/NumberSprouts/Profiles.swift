@@ -41,7 +41,7 @@ struct Profile: Codable, Identifiable, Equatable {
 
 final class AppModel: ObservableObject {
     /// Home leads with Paint by Number; Dot to Dot and the card games are one level down.
-    enum Screen: Equatable { case who, home, games, dots, quest, play(String, picture: String? = nil) }
+    enum Screen: Equatable { case who, home, games, dots, quest, makeTrue, play(String, picture: String? = nil) }
 
     @Published private(set) var profiles: [Profile] = []
     @Published var currentID: UUID?
@@ -91,6 +91,11 @@ final class AppModel: ObservableObject {
             $0.stars[mode, default: 0] += stars
             $0.rounds[mode, default: 0] += 1
         }
+    }
+
+    /// Make It True gives a star for each new way, one at a time.
+    func addStars(mode: String, _ n: Int) {
+        update { $0.stars[mode, default: 0] += n }
     }
 
     func saveQuest(_ change: (inout QuestSave) -> Void) {
