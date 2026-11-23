@@ -628,7 +628,7 @@ body.fab-hide .fab{display:none}   /* typing: never sit on a text field above th
 <body>
 
 <div class="appbar">
-  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.13.0</small></span></div>
+  <div class="brand"><span class="brand-lamp" aria-hidden="true"></span><span>Chiaro Tinker Tools<small>a personal tool belt &amp; studio · CTT Mobile v0.13.1</small></span></div>
   <div class="maintabs">
     <div class="maintab active" data-m="opening" onclick="switchMain('opening')">Opening</div>
     <div class="maintab" data-m="journal" onclick="switchMain('journal')">Project Journal</div>
@@ -1413,8 +1413,10 @@ body.fab-hide .fab{display:none}   /* typing: never sit on a text field above th
 
 <script>
 /* =====================================================================
-   Chiaro Tinker Tools — Mobile · CTT Mobile v0.13.0 — the mobile surface of
-   CTT. v0.13.0: the pocket FAB gains a third tool, the Bell: full-screen tinker's
+   Chiaro Tinker Tools — Mobile · CTT Mobile v0.13.1 — the mobile surface of
+   CTT. v0.13.1: carries db.weeks (desktop v0.14.0's week focus) — schema lockstep;
+   this surface doesn't render it yet.
+   v0.13.0: the pocket FAB gains a third tool, the Bell: full-screen tinker's
    bell from any room, ✕/Esc returning to that room (desktop v0.13.0 adopts the FAB).
    v0.12.1: the Primes number sits a little higher, with air above an open sheet.
    v0.12.0: pocket tools move from the appbar to a bottom-right FAB that fans
@@ -1549,6 +1551,7 @@ function mergeDefaults(p){
   p.timecard=Object.assign({days:{},currentDate:null}, p.timecard||{});
   p.intentions=p.intentions||{};   // Opening tab: per-date session intentions [{text,from,to,done}]
   p.closing=p.closing||{};         // Closing tab: per-date {enough:bool} — never read after its day
+  p.weeks=p.weeks||{};             // Blueprint week focus (desktop v0.14.0): keyed by the week's Sunday (ISO) → {focus:[{text,done}]} — SCHEMA LOCKSTEP: this default exists in both sibling repos. This surface doesn't render it yet; it carries it safely.
   p.blocks=p.blocks||{};           // Blueprint day map (desktop v0.10.0): per-date [{id,s,e,text}], s/e = minutes after midnight — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.primes=Object.assign({solved:{}}, p.primes||{});   // Primes pocket: {n:'YYYY-MM-DD'} the first day each prime was called right — SCHEMA LOCKSTEP: this default exists in both sibling repos
   p.scratch=Object.assign({cells:{}}, p.scratch||{});   // Scratch sheet (pocket tool): raw strings keyed "A1".."H25" — SCHEMA LOCKSTEP: this default exists in both sibling repos

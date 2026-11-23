@@ -660,6 +660,15 @@
       as a bonus. The scroll-pinned beats play on their own when their page
       arrives. Screens scale down as a whole on short phones.
 
+* **[2026-11-23] v0.13.1 — carries desktop v0.14.0's week focus (schema
+  lockstep).** `p.weeks` defaults here too. Desktop v0.14.0 also turned the
+  day's free-form note into a checklist past the three (`day.win[3..]`,
+  `day.noteMoved`) and links day-map blocks to items (`block.ref` → item
+  `id`). This surface preserves all of it (verified: a desktop-shaped db
+  survives a mobile edit + save) but doesn't render the new UI yet. Its
+  board shows the extra items as extra slots and still shows the old note.
+  Desktop first, by Chad's choice. A port waits until the design settles.
+
 ## 💡 The Parking Lot (Future Ideas — deliberately open)
 * **M1 candidates (waiting on dogfood evidence):** thumb-reach for the main
   tabs · tap-target sizing on the day grid · Blueprint board on a narrow
